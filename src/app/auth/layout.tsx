@@ -25,19 +25,19 @@ export default function AuthLayout({
                   <Image
                     width={231}
                     height={48}
-                    src="./images/logo/auth-logo.svg"
+                    src="/images/logo/logo.png"
                     alt="Logo"
                   />
                 </Link>
-                <p className="text-center text-gray-400 dark:text-white/60">
-                  Free and Open-Source Tailwind CSS Admin Dashboard Template
+                <p className="text-center  text-gray-200 dark:text-white/60">
+                Welcome to the Duty Waiver System – a secure platform for submitting, processing, and tracking duty waiver applications efficiently.
                 </p>
               </div>
             </div>
           </div>
-          <div className="fixed bottom-6 right-6 z-50 hidden sm:block">
+          {/* <div className="fixed bottom-6 right-6 z-50 hidden sm:block">
             <ThemeTogglerTwo />
-          </div>
+          </div> */}
         </div>
       </ThemeProvider>
     </div>
