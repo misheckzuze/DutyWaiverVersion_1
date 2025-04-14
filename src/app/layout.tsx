@@ -3,6 +3,7 @@ import './globals.css';
 
 import { SidebarProvider } from '@/context/SidebarContext';
 import { ThemeProvider } from '@/context/ThemeContext';
+import { AuthProvider } from '@/hooks/useAuth';
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -17,7 +18,9 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${outfit.className} dark:bg-gray-900`}>
         <ThemeProvider>
-          <SidebarProvider>{children}</SidebarProvider>
+          <SidebarProvider>
+            <AuthProvider>{children}</AuthProvider>
+          </SidebarProvider>
         </ThemeProvider>
       </body>
     </html>
