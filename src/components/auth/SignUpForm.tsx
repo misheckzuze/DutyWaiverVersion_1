@@ -19,6 +19,7 @@ export default function SignUpForm() {
   const [step, setStep] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const [formData, setFormData] = useState({
     tin: "",
@@ -37,13 +38,72 @@ export default function SignUpForm() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const validateBusinessDetails = () => {
+    const { tin, tradingName, address, businessEmail, phoneNumber } = formData;
+    const errors: Record<string, string> = {};
+
+    if (!tin) errors.tin = "TIN is required.";
+    if (!tradingName) errors.tradingName = "Trading Name is required.";
+    if (!address) errors.address = "Business Address is required.";
+    if (!businessEmail) {
+      errors.businessEmail = "Business Email is required.";
+    } else if (!/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(businessEmail)) {
+      errors.businessEmail = "Please enter a valid business email address.";
+    }
+    if (!phoneNumber) {
+      errors.phoneNumber = "Phone Number is required.";
+    } else if (!/^\d{10}$/.test(phoneNumber)) {
+      errors.phoneNumber = "Phone number must be a valid 10-digit Malawian number.";
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const validatePersonalDetails = () => {
+    const { firstName, lastName, email, password } = formData;
+    const errors: Record<string, string> = {};
+
+    if (!firstName) errors.firstName = "First Name is required.";
+    if (!lastName) errors.lastName = "Last Name is required.";
+    if (!email) {
+      errors.email = "Email is required.";
+    } else if (!/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(email)) {
+      errors.email = "Please enter a valid email address.";
+    }
+    if (!password) {
+      errors.password = "Password is required.";
+    } else if (password.length < 6) {
+      errors.password = "Password must be at least 6 characters long.";
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleContinueToPersonalDetails = () => {
+    if (validateBusinessDetails()) {
+      setStep(2);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!validatePersonalDetails()) {
+      return; // Validate personal details first
+    }
+
+    if (!isChecked) {
+      setError("You must accept the Terms and Conditions to proceed.");
+      return;
+    }
+
     setError(null);
     setIsLoading(true);
 
     try {
-      await register(formData); // You can adjust this based on your API
+      await register(formData);
       router.push("/");
     } catch (err) {
       setError("Sign up failed. Please check your input and try again.");
@@ -102,6 +162,7 @@ export default function SignUpForm() {
                     onChange={handleChange}
                     placeholder="Enter your business TIN"
                   />
+                  {fieldErrors.tin && <p className="text-red-500 text-sm">{fieldErrors.tin}</p>}
                 </div>
                 <div>
                   <Label>Trading Name<span className="text-error-500">*</span></Label>
@@ -112,6 +173,7 @@ export default function SignUpForm() {
                     onChange={handleChange}
                     placeholder="Enter your business name"
                   />
+                  {fieldErrors.tradingName && <p className="text-red-500 text-sm">{fieldErrors.tradingName}</p>}
                 </div>
                 <div>
                   <Label>Business Address<span className="text-error-500">*</span></Label>
@@ -122,6 +184,7 @@ export default function SignUpForm() {
                     onChange={handleChange}
                     placeholder="Enter your business address"
                   />
+                  {fieldErrors.address && <p className="text-red-500 text-sm">{fieldErrors.address}</p>}
                 </div>
                 <div>
                   <Label>Business Email<span className="text-error-500">*</span></Label>
@@ -132,6 +195,7 @@ export default function SignUpForm() {
                     onChange={handleChange}
                     placeholder="Enter your business email"
                   />
+                  {fieldErrors.businessEmail && <p className="text-red-500 text-sm">{fieldErrors.businessEmail}</p>}
                 </div>
                 <div>
                   <Label>Phone Number<span className="text-error-500">*</span></Label>
@@ -142,9 +206,10 @@ export default function SignUpForm() {
                     onChange={handleChange}
                     placeholder="Enter your business phone number"
                   />
+                  {fieldErrors.phoneNumber && <p className="text-red-500 text-sm">{fieldErrors.phoneNumber}</p>}
                 </div>
                 <div>
-                  <Button type="button" className="w-full" onClick={() => setStep(2)}>
+                  <Button type="button" className="w-full" onClick={handleContinueToPersonalDetails}>
                     Continue to Personal Details
                   </Button>
                 </div>
@@ -161,6 +226,7 @@ export default function SignUpForm() {
                       onChange={handleChange}
                       placeholder="Enter your first name"
                     />
+                    {fieldErrors.firstName && <p className="text-red-500 text-sm">{fieldErrors.firstName}</p>}
                   </div>
                   <div>
                     <Label>Last Name<span className="text-error-500">*</span></Label>
@@ -171,6 +237,7 @@ export default function SignUpForm() {
                       onChange={handleChange}
                       placeholder="Enter your last name"
                     />
+                    {fieldErrors.lastName && <p className="text-red-500 text-sm">{fieldErrors.lastName}</p>}
                   </div>
                 </div>
                 <div>
@@ -182,6 +249,7 @@ export default function SignUpForm() {
                     onChange={handleChange}
                     placeholder="Enter your personal email"
                   />
+                  {fieldErrors.email && <p className="text-red-500 text-sm">{fieldErrors.email}</p>}
                 </div>
                 <div>
                   <Label>Password<span className="text-error-500">*</span></Label>
@@ -204,6 +272,7 @@ export default function SignUpForm() {
                       )}
                     </span>
                   </div>
+                  {fieldErrors.password && <p className="text-red-500 text-sm">{fieldErrors.password}</p>}
                 </div>
 
                 {error && <p className="text-red-500 text-sm">{error}</p>}
