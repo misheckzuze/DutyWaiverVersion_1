@@ -334,10 +334,10 @@ const AppSidebar: React.FC = () => {
             <>
               <Image
                 className="dark:hidden"
-                src="/images/logo/dw-logo.png"
+                src="/images/logo/mra-logo.png"
                 alt="Logo"
-                width={180}
-                height={50}
+                width={150}
+                height={40}
               />
               <Image
                 className="hidden dark:block"
