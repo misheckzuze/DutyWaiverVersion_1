@@ -6,37 +6,35 @@ import MonthlySalesChart from "@/components/ecommerce/MonthlySalesChart";
 import StatisticsChart from "@/components/ecommerce/StatisticsChart";
 import RecentOrders from "@/components/ecommerce/RecentOrders";
 import DemographicCard from "@/components/ecommerce/DemographicCard";
+import { TopDasboardAnalytics } from "@/components/dashboard/TopDasboardAnalytics";
+import RecentApplications from "@/components/dashboard/RecentApplications";
 
 export const metadata: Metadata = {
   title:
     "Dashboard | Duty Waiver System",
-  description: "This is Next.js Home for Duty Waiver Dashboard Template",
+  description: "Home for Duty Waiver Dashboard System",
 };
 
 export default function Ecommerce() {
   return (
     <div className="grid grid-cols-12 gap-4 md:gap-6">
-      <div className="col-span-12 space-y-6 xl:col-span-7">
-        <EcommerceMetrics />
+      <div className="col-span-12 space-y-12 xl:col-span-12">
+        <TopDasboardAnalytics />
 
-        <MonthlySalesChart />
+      </div>
+      <div className="col-span-12 xl:col-span-12">
+        <RecentApplications />
       </div>
 
-      <div className="col-span-12 xl:col-span-5">
-        <MonthlyTarget />
-      </div>
-
-      <div className="col-span-12">
+      {/* <div className="col-span-12">
         <StatisticsChart />
-      </div>
+      </div> */}
 
-      <div className="col-span-12 xl:col-span-5">
+      {/* <div className="col-span-12 xl:col-span-5">
         <DemographicCard />
-      </div>
+      </div> */}
 
-      <div className="col-span-12 xl:col-span-7">
-        <RecentOrders />
-      </div>
+
     </div>
   );
 }
