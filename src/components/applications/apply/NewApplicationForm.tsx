@@ -12,7 +12,7 @@ import TextArea from '@/components/ui-utils/input/TextArea';
 import Button from '@/components/ui/button/Button';
 // import Modal from '@/components/ui-utils/Modal';
 import Modals from '@/app/(admin)/(ui-elements)/modals/page';
-import { Table,TableHeader, TableBody, TableRow, TableCell } from '@/components/ui/table';
+import { Table, TableHeader, TableBody, TableRow, TableCell } from '@/components/ui/table';
 import { Modal } from '@/components/ui/modal';
 import ItemTable from './ItemTable';
 // import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from '@/components/ui-utils/Table';
@@ -48,7 +48,7 @@ export default function NewApplicationForm({ className, onChange }: FileInputPro
   const [projectDuration, setProjectDuration] = useState("");
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
-  
+
   // Items state
   const [items, setItems] = useState<Item[]>([]);
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
@@ -60,7 +60,7 @@ export default function NewApplicationForm({ className, onChange }: FileInputPro
     unitOfMeasure: '',
     value: 0
   });
-  
+
   // Attachments state
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [newAttachmentType, setNewAttachmentType] = useState("");
@@ -148,7 +148,7 @@ export default function NewApplicationForm({ className, onChange }: FileInputPro
 
   const handleAttachmentFileChange = (e: React.ChangeEvent<HTMLInputElement>, id: string) => {
     const file = e.target.files ? e.target.files[0] : null;
-    setAttachments(attachments.map(attachment => 
+    setAttachments(attachments.map(attachment =>
       attachment.id === id ? { ...attachment, file } : attachment
     ));
   };
@@ -188,7 +188,7 @@ export default function NewApplicationForm({ className, onChange }: FileInputPro
         <div className="mb-8">
           <div className="flex justify-between mb-2">
             {[1, 2, 3, 4].map((step) => (
-              <div 
+              <div
                 key={step}
                 className={`flex flex-col items-center ${currentStep >= step ? 'text-blue-600' : 'text-gray-400'}`}
               >
@@ -205,8 +205,8 @@ export default function NewApplicationForm({ className, onChange }: FileInputPro
             ))}
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+            <div
+              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
               style={{ width: `${(currentStep / 4) * 100}%` }}
             ></div>
           </div>
@@ -216,18 +216,18 @@ export default function NewApplicationForm({ className, onChange }: FileInputPro
         {currentStep === 1 && (
           <div className="space-y-6">
             <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Project Information</h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <Label>Project Name*</Label>
-                <Input 
-                  type="text" 
+                <Input
+                  type="text"
                   value={projectName}
                   onChange={(e) => setProjectName(e.target.value)}
                   placeholder="Enter project name"
                 />
               </div>
-              
+
               <div>
                 <Label>Project Type*</Label>
                 <div className="relative">
@@ -257,8 +257,8 @@ export default function NewApplicationForm({ className, onChange }: FileInputPro
 
             <div>
               <Label>Project Location*</Label>
-              <Input 
-                type="text" 
+              <Input
+                type="text"
                 value={projectLocation}
                 onChange={(e) => setProjectLocation(e.target.value)}
                 placeholder="Enter project location (address, district, etc.)"
@@ -268,18 +268,18 @@ export default function NewApplicationForm({ className, onChange }: FileInputPro
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <Label>Project Value (MWK)*</Label>
-                <Input 
-                  type="number" 
+                <Input
+                  type="number"
                   value={projectValue}
                   onChange={(e) => setProjectValue(e.target.value)}
                   placeholder="Enter total project value"
                 />
               </div>
-              
+
               <div>
                 <Label>Project Duration*</Label>
-                <Input 
-                  type="text" 
+                <Input
+                  type="text"
                   value={projectDuration}
                   onChange={(e) => setProjectDuration(e.target.value)}
                   placeholder="e.g. 12 months, 2 years, etc."
@@ -293,18 +293,18 @@ export default function NewApplicationForm({ className, onChange }: FileInputPro
                   id="start-date"
                   label="Start Date*"
                   placeholder="Select start date"
-                  // value={startDate}
-                  // onChange={(date) => setStartDate(date)}
+                // value={startDate}
+                // onChange={(date) => setStartDate(date)}
                 />
               </div>
-              
+
               <div>
                 <DatePicker
                   id="end-date"
                   label="End Date*"
                   placeholder="Select end date"
-                  // value={endDate}
-                  // onChange={(date) => setEndDate(date)}
+                // value={endDate}
+                // onChange={(date) => setEndDate(date)}
                 />
               </div>
             </div>
@@ -326,7 +326,7 @@ export default function NewApplicationForm({ className, onChange }: FileInputPro
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Items Requesting Duty Waiver</h3>
-              <Button 
+              <Button
                 onClick={openItemModal}
                 className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
               >
@@ -336,19 +336,21 @@ export default function NewApplicationForm({ className, onChange }: FileInputPro
             </div>
 
             {items.length > 0 ? (
+
               <ItemTable
-              items={items}
-              editItem={editItem}
-              deleteItem={deleteItem}
-              calculateTotalValue={calculateTotalValue}
-            />
+                items={items}
+                editItem={editItem}
+                deleteItem={deleteItem}
+                calculateTotalValue={calculateTotalValue}
+              />
+
               // <div className="border rounded-lg overflow-hidden">
               //   <Table>
               //     <TableHeader>
               //                <TableCell
               //                         isHeader
               //                         >
-              //                         HS Code
+              //                         HS Code2
               //                       </TableCell>
               //                       <TableCell
               //                       isHeader
@@ -430,7 +432,7 @@ export default function NewApplicationForm({ className, onChange }: FileInputPro
                   Click the "Add Item" button to start adding items for duty waiver.
                 </p>
                 <div className="mt-6">
-                  <Button 
+                  <Button
                     onClick={openItemModal}
                     className="flex items-center gap-2 mx-auto bg-blue-600 hover:bg-blue-700 text-white"
                   >
@@ -448,7 +450,7 @@ export default function NewApplicationForm({ className, onChange }: FileInputPro
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Required Documents</h3>
-              <Button 
+              <Button
                 onClick={addAttachment}
                 className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
               >
@@ -474,16 +476,16 @@ export default function NewApplicationForm({ className, onChange }: FileInputPro
                         className="hidden"
                         onChange={(e) => handleAttachmentFileChange(e, attachment.id)}
                       />
-                      <label 
+                      <label
                         htmlFor={`file-upload-${attachment.id}`}
                         className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md cursor-pointer"
                       >
                         {attachment.file ? 'Change' : 'Upload'}
                       </label>
-                      <Button 
+                      <Button
                         onClick={() => removeAttachment(attachment.id)}
                         className="text-red-600 hover:text-red-800"
-                        // variant="ghost"
+                      // variant="ghost"
                       >
                         {/* Tempory ICon */}
                         <EyeCloseIcon className="w-4 h-4" />
@@ -512,14 +514,14 @@ export default function NewApplicationForm({ className, onChange }: FileInputPro
                       </div>
                     </div>
                     <div className="flex items-end gap-2">
-                      <Button 
+                      <Button
                         onClick={saveAttachment}
                         className="bg-blue-600 hover:bg-blue-700 text-white"
                         disabled={!newAttachmentType}
                       >
                         Save
                       </Button>
-                      <Button 
+                      <Button
                         onClick={() => setIsAddingAttachment(false)}
                         variant="outline"
                       >
@@ -548,7 +550,7 @@ export default function NewApplicationForm({ className, onChange }: FileInputPro
         {currentStep === 4 && (
           <div className="space-y-8">
             <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Review Your Application</h3>
-            
+
             <div className="border rounded-lg p-6">
               <h4 className="font-semibold text-gray-800 dark:text-white mb-4">Project Details</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -659,7 +661,7 @@ export default function NewApplicationForm({ className, onChange }: FileInputPro
         {/* Navigation Buttons */}
         <div className="flex justify-between mt-8">
           {currentStep > 1 && (
-            <Button 
+            <Button
               onClick={handlePrevStep}
               variant="outline"
               className="border-gray-300"
@@ -668,14 +670,14 @@ export default function NewApplicationForm({ className, onChange }: FileInputPro
             </Button>
           )}
           {currentStep < 4 ? (
-            <Button 
+            <Button
               onClick={handleNextStep}
               className="ml-auto bg-blue-600 hover:bg-blue-700 text-white"
             >
               Continue
             </Button>
           ) : (
-            <Button 
+            <Button
               onClick={() => alert('Application submitted!')}
               className="ml-auto bg-green-600 hover:bg-green-700 text-white"
             >
@@ -690,43 +692,43 @@ export default function NewApplicationForm({ className, onChange }: FileInputPro
         isOpen={isItemModalOpen}
         onClose={() => setIsItemModalOpen(false)}
         className="max-w-[584px] p-5 lg:p-10"
-        // title={currentItem.id ? "Edit Item" : "Add New Item"}
+      // title={currentItem.id ? "Edit Item" : "Add New Item"}
       >
         <div className="space-y-4">
-        <h4 className="mb-6 text-lg font-medium text-gray-800 dark:text-white/90">
+          <h4 className="mb-6 text-lg font-medium text-gray-800 dark:text-white/90">
             Add Item
           </h4>
           <div>
             <Label>HS Code*</Label>
-            <Input 
-              type="text" 
+            <Input
+              type="text"
               value={currentItem.hsCode}
-              onChange={(e) => setCurrentItem({...currentItem, hsCode: e.target.value})}
+              onChange={(e) => setCurrentItem({ ...currentItem, hsCode: e.target.value })}
               placeholder="Enter HS Code"
             />
           </div>
-          
+
           <div>
             <Label>Description*</Label>
             <TextArea
               value={currentItem.description}
-              onChange={(value) => setCurrentItem({...currentItem, description: value})}
+              onChange={(value) => setCurrentItem({ ...currentItem, description: value })}
               rows={3}
               placeholder="Item description"
             />
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>Quantity*</Label>
-              <Input 
-                type="number" 
+              <Input
+                type="number"
                 value={currentItem.quantity || ''}
-                onChange={(e) => setCurrentItem({...currentItem, quantity: parseInt(e.target.value) || 0})}
+                onChange={(e) => setCurrentItem({ ...currentItem, quantity: parseInt(e.target.value) || 0 })}
                 placeholder="Enter quantity"
               />
             </div>
-            
+
             <div>
               <Label>Unit of Measure*</Label>
               <div className="relative">
@@ -734,7 +736,7 @@ export default function NewApplicationForm({ className, onChange }: FileInputPro
                   options={unitOfMeasureOptions}
                   placeholder="Select unit"
                   // value={currentItem.unitOfMeasure}
-                  onChange={(value) => setCurrentItem({...currentItem, unitOfMeasure: value})}
+                  onChange={(value) => setCurrentItem({ ...currentItem, unitOfMeasure: value })}
                   className="dark:bg-dark-900"
                 />
                 <span className="absolute text-gray-500 -translate-y-1/2 pointer-events-none right-3 top-1/2 dark:text-gray-400">
@@ -743,26 +745,26 @@ export default function NewApplicationForm({ className, onChange }: FileInputPro
               </div>
             </div>
           </div>
-          
+
           <div>
             <Label>Value (MWK)*</Label>
-            <Input 
-              type="number" 
+            <Input
+              type="number"
               value={currentItem.value || ''}
-              onChange={(e) => setCurrentItem({...currentItem, value: parseFloat(e.target.value) || 0})}
+              onChange={(e) => setCurrentItem({ ...currentItem, value: parseFloat(e.target.value) || 0 })}
               placeholder="Enter value in MWK"
             />
           </div>
-          
+
           <div className="flex justify-end gap-3 pt-4">
-            <Button 
+            <Button
               onClick={() => setIsItemModalOpen(false)}
               variant="outline"
               className="border-gray-300"
             >
               Cancel
             </Button>
-            <Button 
+            <Button
               onClick={saveItem}
               className="bg-blue-600 hover:bg-blue-700 text-white"
               disabled={!currentItem.hsCode || !currentItem.description || !currentItem.unitOfMeasure}
