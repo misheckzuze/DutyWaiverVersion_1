@@ -19,9 +19,34 @@ export default function SignInForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const validateSignInDetails = () => {
+    const errors: Record<string, string> = {};
+
+    if (!tin) errors.tin = "TIN is required.";
+    if (!email) {
+      errors.email = "Email is required.";
+    } else if (!/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(email)) {
+      errors.email = "Please enter a valid email address.";
+    }
+    if (!password) {
+      errors.password = "Password is required.";
+    } else if (password.length < 6) {
+      errors.password = "Password must be at least 6 characters long.";
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!validateSignInDetails()) {
+      return; // Validate sign-in details first
+    }
+
     setError(null);
     setIsLoading(true);
 
@@ -60,6 +85,7 @@ export default function SignInForm() {
                     value={tin}
                     onChange={(e) => setTin(e.target.value)}
                   />
+                  {fieldErrors.tin && <p className="text-red-500 text-sm">{fieldErrors.tin}</p>}
                 </div>
                 <div>
                   <Label>
@@ -71,6 +97,7 @@ export default function SignInForm() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                   />
+                  {fieldErrors.email && <p className="text-red-500 text-sm">{fieldErrors.email}</p>}
                 </div>
                 <div>
                   <Label>
@@ -94,6 +121,7 @@ export default function SignInForm() {
                       )}
                     </span>
                   </div>
+                  {fieldErrors.password && <p className="text-red-500 text-sm">{fieldErrors.password}</p>}
                 </div>
                 {error && <p className="text-red-500 text-sm">{error}</p>}
                 <div className="flex items-center justify-between">
