@@ -45,7 +45,7 @@ const navItems: NavItem[] = [
   {
     icon: <ListIcon />,
     name: "Apply",
-    path: "/profile",
+    path: "/new-application",
   },
   {
     icon: <PageIcon />,
