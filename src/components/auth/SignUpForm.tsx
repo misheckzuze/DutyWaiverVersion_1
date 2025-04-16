@@ -18,6 +18,7 @@ export default function SignUpForm() {
   const [isChecked, setIsChecked] = useState(false);
   const [step, setStep] = useState(1);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     tin: "",
@@ -39,12 +40,15 @@ export default function SignUpForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setIsLoading(true);
 
     try {
       await register(formData); // You can adjust this based on your API
       router.push("/");
     } catch (err) {
       setError("Sign up failed. Please check your input and try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -222,8 +226,34 @@ export default function SignUpForm() {
                     <ChevronLeftIcon className="w-5 h-5 mr-1" />
                     Back
                   </button>
-                  <Button type="submit" className="w-2/3">
-                    Sign Up
+                  <Button type="submit" className="w-2/3" disabled={isLoading}>
+                    {isLoading ? (
+                      <span className="flex items-center justify-center">
+                        <svg
+                          className="w-4 h-4 mr-2 text-white animate-spin"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                          ></path>
+                        </svg>
+                        Loading...
+                      </span>
+                    ) : (
+                      "Sign Up"
+                    )}
                   </Button>
                 </div>
               </div>
