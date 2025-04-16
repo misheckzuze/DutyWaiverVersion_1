@@ -15,15 +15,15 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // If the user is not logged in and trying to access a protected route
-  if (!token && !["/signin", "/signup"].includes(pathname)) {
-    return NextResponse.redirect(new URL("/signin", request.url));
-  }
+  // // If the user is not logged in and trying to access a protected route
+  // if (!token && !["/signin", "/signup"].includes(pathname)) {
+  //   return NextResponse.redirect(new URL("/signin", request.url));
+  // }
 
-  // If the user is logged in and trying to access the signin or register page, redirect to home
-  if (token && ["/signin", "/signup"].includes(pathname)) {
-    return NextResponse.redirect(new URL("/", request.url));
-  }
+  // // If the user is logged in and trying to access the signin or register page, redirect to home
+  // if (token && ["/signin", "/signup"].includes(pathname)) {
+  //   return NextResponse.redirect(new URL("/", request.url));
+  // }
 
   return NextResponse.next();
 }

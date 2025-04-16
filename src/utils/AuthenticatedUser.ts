@@ -1,7 +1,14 @@
 export class AuthenticatedUser {
   static getUserDetails() {
-    const authData = localStorage.getItem("authData");
-    return authData ? JSON.parse(authData) : null;
+    // const authData = localStorage.getItem("authData");
+    // return authData ? JSON.parse(authData) : null;
+
+      // Check if window is defined (client-side)
+      if (typeof window !== 'undefined') {
+        const authData = localStorage.getItem("authData");
+        return authData ? JSON.parse(authData) : null;
+      }
+      return null;
   }
 
   static getToken() {

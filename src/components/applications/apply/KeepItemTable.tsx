@@ -12,6 +12,7 @@ import {
   ColumnFiltersState,
   SortingState,
 } from '@tanstack/react-table';
+// import { EyeCloseIcon, SearchIcon, ChevronLeftIcon, ChevronRightIcon, ArrowUpIcon, ArrowDownIcon } from '@/icons';
 import { EyeCloseIcon, ChevronLeftIcon, ArrowUpIcon, ArrowDownIcon } from '@/icons';
 
 interface Item {
@@ -30,7 +31,7 @@ type Props = {
   calculateTotalValue: () => number;
 };
 
-const ItemTable = ({ items, editItem, deleteItem, calculateTotalValue }: Props) => {
+const KeepItemTable = ({ items, editItem, deleteItem, calculateTotalValue }: Props) => {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState('');
@@ -115,6 +116,7 @@ const ItemTable = ({ items, editItem, deleteItem, calculateTotalValue }: Props) 
       <div className="p-4 border-b border-gray-100 flex flex-col sm:flex-row justify-between gap-4">
         <div className="relative max-w-xs w-full">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            {/* SearchIcon */}
             <EyeCloseIcon className="h-4 w-4 text-gray-400" />
           </div>
           <input
@@ -235,6 +237,7 @@ const ItemTable = ({ items, editItem, deleteItem, calculateTotalValue }: Props) 
             disabled={!table.getCanNextPage()}
             className={`p-2 rounded-md ${!table.getCanNextPage() ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-100'}`}
           >
+            {/* ChevronIcon */}
             <EyeCloseIcon className="h-4 w-4" />
           </button>
         </div>
@@ -247,4 +250,4 @@ const ItemTable = ({ items, editItem, deleteItem, calculateTotalValue }: Props) 
   );
 };
 
-export default ItemTable;
+export default KeepItemTable;

@@ -26,20 +26,6 @@ export default function FormElements() {
       <PageBreadcrumb pageTitle="Duty Waiver Application Form" />
       <div className="px-6">
         <NewApplicationForm />
-        {/* <div className="space-y-6">
-          <DefaultInputs />
-          <SelectInputs />
-          <TextAreaInput />
-          <InputStates />
-        </div> */}
-        {/* <div className="space-y-6">
-          <InputGroup />
-          <FileInputExample />
-          <CheckboxComponents />
-          <RadioButtons />
-          <ToggleSwitch />
-          <DropzoneComponent />
-        </div> */}
       </div>
     </div>
   );

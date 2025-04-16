@@ -4,12 +4,18 @@ import ComponentCard from '../../common/ComponentCard';
 import Label from '@/components/ui-utils/Label';
 import Input from '@/components/ui-utils/input/InputField';
 import Select from '@/components/ui-utils/Select';
+// import { ChevronDownIcon, EyeCloseIcon, EyeIcon, TimeIcon, PlusIcon, TrashIcon, DocumentIcon } from '../../../icons';
 import { ChevronDownIcon, EyeCloseIcon, EyeIcon, TimeIcon, PlusIcon } from '../../../icons';
 import DatePicker from '@/components/form/date-picker';
 import TextArea from '@/components/ui-utils/input/TextArea';
+// import Button from '@/components/ui-utils/Button';
 import Button from '@/components/ui/button/Button';
+// import Modal from '@/components/ui-utils/Modal';
+import Modals from '@/app/(admin)/(ui-elements)/modals/page';
 import { Table, TableHeader, TableBody, TableRow, TableCell } from '@/components/ui/table';
-import ItemTable from './ItemTable';
+import { Modal } from '@/components/ui/modal';
+import ItemTable from './KeepItemTable';
+// import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from '@/components/ui-utils/Table';
 
 interface FileInputProps {
   className?: string;
@@ -45,8 +51,9 @@ export default function NewApplicationForm({ className, onChange }: FileInputPro
 
   // Items state
   const [items, setItems] = useState<Item[]>([]);
-  const [editingItemId, setEditingItemId] = useState<string | null>(null);
-  const [newItem, setNewItem] = useState<Omit<Item, 'id'>>({
+  const [isItemModalOpen, setIsItemModalOpen] = useState(false);
+  const [currentItem, setCurrentItem] = useState<Item>({
+    id: '',
     hsCode: '',
     description: '',
     quantity: 0,
@@ -102,29 +109,36 @@ export default function NewApplicationForm({ className, onChange }: FileInputPro
     }
   };
 
-  const editItem = (id: string) => {
-    const itemToEdit = items.find(item => item.id === id);
-    if (itemToEdit) {
-      setEditingItemId(id);
-      // Scroll to the form
-      document.getElementById('item-form')?.scrollIntoView({
-        behavior: 'smooth'
-      });
-    }
+  const openItemModal = () => {
+    setCurrentItem({
+      id: '',
+      hsCode: '',
+      description: '',
+      quantity: 0,
+      unitOfMeasure: '',
+      value: 0
+    });
+    setIsItemModalOpen(true);
+  };
+
+  const editItem = (item: Item) => {
+    setCurrentItem(item);
+    setIsItemModalOpen(true);
   };
 
   const deleteItem = (id: string) => {
     setItems(items.filter(item => item.id !== id));
-    if (editingItemId === id) {
-      setEditingItemId(null);
-      setNewItem({
-        hsCode: '',
-        description: '',
-        quantity: 0,
-        unitOfMeasure: '',
-        value: 0
-      });
+  };
+
+  const saveItem = () => {
+    if (currentItem.id) {
+      // Update existing item
+      setItems(items.map(item => item.id === currentItem.id ? currentItem : item));
+    } else {
+      // Add new item
+      setItems([...items, { ...currentItem, id: Date.now().toString() }]);
     }
+    setIsItemModalOpen(false);
   };
 
   const addAttachment = () => {
@@ -220,6 +234,7 @@ export default function NewApplicationForm({ className, onChange }: FileInputPro
                   <Select
                     options={projectTypeOptions}
                     placeholder="Select project type"
+                    // value={projectType}
                     onChange={handleSelectChange}
                     className="dark:bg-dark-900"
                   />
@@ -278,6 +293,8 @@ export default function NewApplicationForm({ className, onChange }: FileInputPro
                   id="start-date"
                   label="Start Date*"
                   placeholder="Select start date"
+                // value={startDate}
+                // onChange={(date) => setStartDate(date)}
                 />
               </div>
 
@@ -286,6 +303,8 @@ export default function NewApplicationForm({ className, onChange }: FileInputPro
                   id="end-date"
                   label="End Date*"
                   placeholder="Select end date"
+                // value={endDate}
+                // onChange={(date) => setEndDate(date)}
                 />
               </div>
             </div>
@@ -307,171 +326,42 @@ export default function NewApplicationForm({ className, onChange }: FileInputPro
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Items Requesting Duty Waiver</h3>
+              <Button
+                onClick={openItemModal}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <PlusIcon className="w-4 h-4" />
+                Add Item
+              </Button>
             </div>
 
-            {/* Inline Add/Edit Form */}
-            <div id="item-form" className="bg-blue-50 p-4 rounded-lg border border-blue-100 mb-6">
-              <h4 className="font-medium text-blue-800 mb-3">
-                {editingItemId ? 'Edit Item' : 'Add New Item'}
-              </h4>
+            {items.length > 0 ? (
 
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
-                {/* HS Code */}
-                <div className="md:col-span-2">
-                  <Label>HS Code*</Label>
-                  <Input
-                    type="text"
-                    value={editingItemId ?
-                      items.find(i => i.id === editingItemId)?.hsCode || '' :
-                      newItem.hsCode}
-                    onChange={(e) => editingItemId ?
-                      setItems(items.map(i => i.id === editingItemId ? { ...i, hsCode: e.target.value } : i)) :
-                      setNewItem({ ...newItem, hsCode: e.target.value })
-                    }
-                    placeholder="HS Code"
-                    className="w-full"
-                  />
-                </div>
-
-                {/* Description */}
-                <div className="md:col-span-4">
-                  <Label>Description*</Label>
-                  <Input
-                    type="text"
-                    value={editingItemId ?
-                      items.find(i => i.id === editingItemId)?.description || '' :
-                      newItem.description}
-                    onChange={(e) => editingItemId ?
-                      setItems(items.map(i => i.id === editingItemId ? { ...i, description: e.target.value } : i)) :
-                      setNewItem({ ...newItem, description: e.target.value })
-                    }
-                    placeholder="Item description"
-                    className="w-full"
-                  />
-                </div>
-
-                {/* Quantity */}
-                <div className="md:col-span-2">
-                  <Label>Quantity*</Label>
-                  <Input
-                    type="number"
-                    value={editingItemId ?
-                      items.find(i => i.id === editingItemId)?.quantity || 0 :
-                      newItem.quantity || ''}
-                    onChange={(e) => editingItemId ?
-                      setItems(items.map(i => i.id === editingItemId ? { ...i, quantity: parseInt(e.target.value) || 0 } : i)) :
-                      setNewItem({ ...newItem, quantity: parseInt(e.target.value) || 0 })
-                    }
-                    placeholder="Qty"
-                    className="w-full"
-                  />
-                </div>
-
-                {/* Unit of Measure */}
-                <div className="md:col-span-2">
-                  <Label>Unit*</Label>
-                  <div className="relative">
-                    <Select
-                      options={unitOfMeasureOptions}
-                      placeholder="Select"
-                      // value={editingItemId ? 
-                      //   items.find(i => i.id === editingItemId)?.unitOfMeasure || '' : 
-                      //   newItem.unitOfMeasure}
-                      onChange={(value) => editingItemId ?
-                        setItems(items.map(i => i.id === editingItemId ? { ...i, unitOfMeasure: value } : i)) :
-                        setNewItem({ ...newItem, unitOfMeasure: value })
-                      }
-                      className="w-full dark:bg-dark-900"
-                    />
-                    <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                  </div>
-                </div>
-
-                {/* Value */}
-                <div className="md:col-span-2">
-                  <Label>Value (MWK)*</Label>
-                  <Input
-                    type="number"
-                    value={editingItemId ?
-                      items.find(i => i.id === editingItemId)?.value || 0 :
-                      newItem.value || ''}
-                    onChange={(e) => editingItemId ?
-                      setItems(items.map(i => i.id === editingItemId ? { ...i, value: parseFloat(e.target.value) || 0 } : i)) :
-                      setNewItem({ ...newItem, value: parseFloat(e.target.value) || 0 })
-                    }
-                    placeholder="Value"
-                    className="w-full"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-3 mt-4">
-                {editingItemId && (
+              <ItemTable
+                items={items}
+                editItem={editItem}
+                deleteItem={deleteItem}
+                calculateTotalValue={calculateTotalValue}
+              />
+            ) : (
+              <div className="text-center py-8 border-2 border-dashed rounded-lg">
+                {/* Tempoary Icon */}
+                <EyeCloseIcon className="mx-auto h-12 w-12 text-gray-400" />
+                <h4 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No items added</h4>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  Click the "Add Item" button to start adding items for duty waiver.
+                </p>
+                <div className="mt-6">
                   <Button
-                    onClick={() => {
-                      setEditingItemId(null);
-                      setNewItem({
-                        hsCode: '',
-                        description: '',
-                        quantity: 0,
-                        unitOfMeasure: '',
-                        value: 0
-                      });
-                    }}
-                    variant="outline"
-                    className="border-gray-300"
+                    onClick={openItemModal}
+                    className="flex items-center gap-2 mx-auto bg-blue-600 hover:bg-blue-700 text-white"
                   >
-                    Cancel
+                    <PlusIcon className="w-4 h-4" />
+                    Add Item
                   </Button>
-                )}
-                <Button
-                  onClick={() => {
-                    if (editingItemId) {
-                      // Update existing item
-                      setEditingItemId(null);
-                    } else {
-                      // Add new item
-                      setItems([...items, {
-                        ...newItem,
-                        id: Date.now().toString()
-                      }]);
-                      setNewItem({
-                        hsCode: '',
-                        description: '',
-                        quantity: 0,
-                        unitOfMeasure: '',
-                        value: 0
-                      });
-                    }
-                  }}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                  disabled={
-                    editingItemId ?
-                      !items.find(i => i.id === editingItemId)?.hsCode ||
-                      !items.find(i => i.id === editingItemId)?.description ||
-                      !items.find(i => i.id === editingItemId)?.unitOfMeasure
-                      :
-                      !newItem.hsCode || !newItem.description || !newItem.unitOfMeasure
-                  }
-                >
-                  {editingItemId ? 'Update Item' : 'Add Item'}
-                </Button>
+                </div>
               </div>
-            </div>
-
-            {/* Items Table */}
-            <ItemTable
-              items={items}
-              editItem={(item) => {
-                setEditingItemId(item.id);
-                // Scroll to the form
-                document.getElementById('item-form')?.scrollIntoView({
-                  behavior: 'smooth'
-                });
-              }}
-              deleteItem={deleteItem}
-              calculateTotalValue={calculateTotalValue}
-            />
+            )}
           </div>
         )}
 
@@ -515,7 +405,9 @@ export default function NewApplicationForm({ className, onChange }: FileInputPro
                       <Button
                         onClick={() => removeAttachment(attachment.id)}
                         className="text-red-600 hover:text-red-800"
+                      // variant="ghost"
                       >
+                        {/* Tempory ICon */}
                         <EyeCloseIcon className="w-4 h-4" />
                       </Button>
                     </div>
@@ -532,6 +424,7 @@ export default function NewApplicationForm({ className, onChange }: FileInputPro
                         <Select
                           options={attachmentTypeOptions}
                           placeholder="Select document type"
+                          // value={newAttachmentType}
                           onChange={setNewAttachmentType}
                           className="dark:bg-dark-900"
                         />
@@ -561,6 +454,7 @@ export default function NewApplicationForm({ className, onChange }: FileInputPro
 
               {attachments.length === 0 && !isAddingAttachment && (
                 <div className="text-center py-8 border-2 border-dashed rounded-lg">
+                  {/* Temporary Icon */}
                   <EyeCloseIcon className="mx-auto h-12 w-12 text-gray-400" />
                   <h4 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No documents added</h4>
                   <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -664,6 +558,7 @@ export default function NewApplicationForm({ className, onChange }: FileInputPro
                   {attachments.map((attachment, index) => (
                     <div key={index} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
                       <div className="flex items-center">
+                        {/* Temporary Icon */}
                         <EyeCloseIcon className="h-5 w-5 text-gray-400 mr-2" />
                         <span>{getAttachmentTypeLabel(attachment.type)}</span>
                         {attachment.file && (
@@ -711,6 +606,94 @@ export default function NewApplicationForm({ className, onChange }: FileInputPro
           )}
         </div>
       </ComponentCard>
+
+      {/* Add/Edit Item Modal */}
+      <Modal
+        isOpen={isItemModalOpen}
+        onClose={() => setIsItemModalOpen(false)}
+        className="max-w-[584px] p-5 lg:p-10"
+      // title={currentItem.id ? "Edit Item" : "Add New Item"}
+      >
+        <div className="space-y-4">
+          <h4 className="mb-6 text-lg font-medium text-gray-800 dark:text-white/90">
+            Add Item
+          </h4>
+          <div>
+            <Label>HS Code*</Label>
+            <Input
+              type="text"
+              value={currentItem.hsCode}
+              onChange={(e) => setCurrentItem({ ...currentItem, hsCode: e.target.value })}
+              placeholder="Enter HS Code"
+            />
+          </div>
+
+          <div>
+            <Label>Description*</Label>
+            <TextArea
+              value={currentItem.description}
+              onChange={(value) => setCurrentItem({ ...currentItem, description: value })}
+              rows={3}
+              placeholder="Item description"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Quantity*</Label>
+              <Input
+                type="number"
+                value={currentItem.quantity || ''}
+                onChange={(e) => setCurrentItem({ ...currentItem, quantity: parseInt(e.target.value) || 0 })}
+                placeholder="Enter quantity"
+              />
+            </div>
+
+            <div>
+              <Label>Unit of Measure*</Label>
+              <div className="relative">
+                <Select
+                  options={unitOfMeasureOptions}
+                  placeholder="Select unit"
+                  // value={currentItem.unitOfMeasure}
+                  onChange={(value) => setCurrentItem({ ...currentItem, unitOfMeasure: value })}
+                  className="dark:bg-dark-900"
+                />
+                <span className="absolute text-gray-500 -translate-y-1/2 pointer-events-none right-3 top-1/2 dark:text-gray-400">
+                  <ChevronDownIcon />
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <Label>Value (MWK)*</Label>
+            <Input
+              type="number"
+              value={currentItem.value || ''}
+              onChange={(e) => setCurrentItem({ ...currentItem, value: parseFloat(e.target.value) || 0 })}
+              placeholder="Enter value in MWK"
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4">
+            <Button
+              onClick={() => setIsItemModalOpen(false)}
+              variant="outline"
+              className="border-gray-300"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={saveItem}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              disabled={!currentItem.hsCode || !currentItem.description || !currentItem.unitOfMeasure}
+            >
+              Save Item
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
