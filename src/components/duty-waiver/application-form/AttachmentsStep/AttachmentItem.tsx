@@ -3,6 +3,7 @@ import React from 'react';
 import { Attachment } from '@/types/AttachmentModel';
 import { EyeCloseIcon } from '@/icons';
 import Button from '@/components/ui/button/Button';
+import { attachmentTypeOptions } from '@/utils/constants';
 
 interface AttachmentItemProps {
   attachment: Attachment;
@@ -20,11 +21,14 @@ export const AttachmentItem: React.FC<AttachmentItemProps> = ({
     onFileChange(attachment.id, file);
   };
 
+  const attachmentTypeOption = attachmentTypeOptions.find(opt => opt.value === attachment.type);
+  const attachmementTypeLabel = attachmentTypeOption ? attachmentTypeOption.label : attachment.type;
+
   return (
     <div className="border rounded-lg p-4">
       <div className="flex justify-between items-center">
         <div>
-          <h4 className="font-medium">{attachment.type}</h4>
+          <h4 className="font-medium">{attachmementTypeLabel}</h4>
           {attachment.file && (
             <p className="text-sm text-gray-500">{attachment.file.name}</p>
           )}

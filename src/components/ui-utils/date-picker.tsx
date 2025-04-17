@@ -6,12 +6,21 @@ import { CalenderIcon } from '../../icons';
 import Hook = flatpickr.Options.Hook;
 import DateOption = flatpickr.Options.DateOption;
 
+// type PropsType = {
+//   id: string;
+//   mode?: "single" | "multiple" | "range" | "time";
+//   onChange?: Hook | Hook[];
+//   defaultDate?: DateOption;
+//   label?: string;
+//   placeholder?: string;
+// };
+
 type PropsType = {
   id: string;
-  mode?: "single" | "multiple" | "range" | "time";
-  onChange?: Hook | Hook[];
-  defaultDate?: DateOption;
   label?: string;
+  mode?: 'single' | 'range';
+  onChange?: (selectedDates: Date[], dateStr: string, instance: any) => void;
+  defaultDate?: string | Date | string[] | Date[];
   placeholder?: string;
 };
 
@@ -24,21 +33,40 @@ export default function DatePicker({
   placeholder,
 }: PropsType) {
   useEffect(() => {
-    const flatPickr = flatpickr(`#${id}`, {
-      mode: mode || "single",
+    flatpickr(`#${id}`, {
+      mode: mode || 'single',
       static: true,
-      monthSelectorType: "static",
-      dateFormat: "Y-m-d",
+      monthSelectorType: 'static',
+      dateFormat: 'Y-m-d',
       defaultDate,
       onChange,
     });
+  }, [id, mode, defaultDate, onChange]);
 
-    return () => {
-      if (!Array.isArray(flatPickr)) {
-        flatPickr.destroy();
-      }
-    };
-  }, [mode, onChange, id, defaultDate]);
+// export default function DatePicker({
+//   id,
+//   mode,
+//   onChange,
+//   label,
+//   defaultDate,
+//   placeholder,
+// }: PropsType) {
+//   useEffect(() => {
+//     const flatPickr = flatpickr(`#${id}`, {
+//       mode: mode || "single",
+//       static: true,
+//       monthSelectorType: "static",
+//       dateFormat: "Y-m-d",
+//       defaultDate,
+//       onChange,
+//     });
+
+//     return () => {
+//       if (!Array.isArray(flatPickr)) {
+//         flatPickr.destroy();
+//       }
+//     };
+//   }, [mode, onChange, id, defaultDate]);
 
   return (
     <div>

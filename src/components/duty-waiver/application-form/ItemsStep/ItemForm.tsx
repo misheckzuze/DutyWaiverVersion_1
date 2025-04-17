@@ -92,26 +92,9 @@ export const ItemForm: React.FC<ItemFormProps> = ({
                     />
                 </div>
 
-                {/* Quantity */}
-                <div className="md:col-span-2">
-                    <Label>Quantity*</Label>
-                    <Input
-                        type="number"
-                        value={editingItemId ?
-                            items.find(i => i.id === editingItemId)?.quantity || 0 :
-                            newItem.quantity || ''}
-                        onChange={(e) => editingItemId ?
-                            setItems(items.map(i => i.id === editingItemId ? { ...i, quantity: parseInt(e.target.value) || 0 } : i)) :
-                            setNewItem({ ...newItem, quantity: parseInt(e.target.value) || 0 })
-                        }
-                        placeholder="Qty"
-                        className="w-full"
-                    />
-                </div>
-
                 {/* Unit of Measure */}
                 <div className="md:col-span-2">
-                    <Label>Unit*</Label>
+                    <Label>Unit of Measure*</Label>
                     <div className="relative">
                         <Select
                             options={unitOfMeasureOptions}
@@ -127,6 +110,23 @@ export const ItemForm: React.FC<ItemFormProps> = ({
                         />
                         <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     </div>
+                </div>
+
+                {/* Quantity */}
+                <div className="md:col-span-2">
+                    <Label>Quantity*</Label>
+                    <Input
+                        type="number"
+                        value={editingItemId ?
+                            items.find(i => i.id === editingItemId)?.quantity || 0 :
+                            newItem.quantity || ''}
+                        onChange={(e) => editingItemId ?
+                            setItems(items.map(i => i.id === editingItemId ? { ...i, quantity: parseInt(e.target.value) || 0 } : i)) :
+                            setNewItem({ ...newItem, quantity: parseInt(e.target.value) || 0 })
+                        }
+                        placeholder="Qty"
+                        className="w-full"
+                    />
                 </div>
 
                 {/* Value */}

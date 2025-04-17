@@ -1,8 +1,8 @@
 "use client";
 import React, { useState } from 'react';
-import { Item } from '../types';
-import { ItemForm } from './ItemForm';
-import { ItemTable } from './ItemTable';
+import { Item } from '@/types/ItemModel';
+import { ItemForm } from './ItemsStep/ItemForm';
+import ItemTable from './ItemsStep/ItemTable';
 
 interface ItemsStepProps {
   items: Item[];
