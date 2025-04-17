@@ -82,7 +82,8 @@ export default function SignInForm() {
                   <Input
                     placeholder="20202020"
                     type="text"
-                    value={tin}
+                    // value={tin}
+                    value={'20202020'}
                     onChange={(e) => setTin(e.target.value)}
                   />
                   {fieldErrors.tin && <p className="text-red-500 text-sm">{fieldErrors.tin}</p>}
@@ -94,7 +95,8 @@ export default function SignInForm() {
                   <Input
                     placeholder="info@gmail.com"
                     type="email"
-                    value={email}
+                    value={'chisomowisck@gmail.com'}
+                    // value={email}
                     onChange={(e) => setEmail(e.target.value)}
                   />
                   {fieldErrors.email && <p className="text-red-500 text-sm">{fieldErrors.email}</p>}
@@ -107,7 +109,8 @@ export default function SignInForm() {
                     <Input
                       type={showPassword ? "text" : "password"}
                       placeholder="Enter your password"
-                      value={password}
+                      // value={password}
+                      value={'Malawi123'}
                       onChange={(e) => setPassword(e.target.value)}
                     />
                     <span
