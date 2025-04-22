@@ -27,16 +27,6 @@ type NavItem = {
 };
 
 const navItems: NavItem[] = [
-  // {
-  //   icon: <GridIcon />,
-  //   name: "Dashboard",
-  //   subItems: [{ name: "Ecommerce", path: "/", pro: false }],
-  // },
-  // {
-  //   icon: <CalenderIcon />,
-  //   name: "Calendar",
-  //   path: "/calendar",
-  // },
   {
     icon: <GridIcon />,
     name: "Dashboard",
@@ -50,69 +40,21 @@ const navItems: NavItem[] = [
   {
     icon: <PageIcon />,
     name: "My Applications",
-    path: "/profile",
+    path: "/my-applications",
   },
   {
     icon: <PieChartIcon />,
     name: "Reports",
     path: "/profile",
   },
-
-
-  // {
-  //   name: "User Profile",
-  //   icon: <UserCircleIcon />,
-  //   subItems: [{ name: "Profile Details", path: "/form-elements", pro: false },{ name: "Logout", path: "/form-elements", pro: false }],
-  // },
-  // {
-  //   name: "Tables",
-  //   icon: <TableIcon />,
-  //   subItems: [{ name: "Basic Tables", path: "/basic-tables", pro: false }],
-  // },
-  // {
-  //   name: "Pages",
-  //   icon: <PageIcon />,
-  //   subItems: [
-  //     { name: "Blank Page", path: "/blank", pro: false },
-  //     { name: "404 Error", path: "/error-404", pro: false },
-  //   ],
-  // },
 ];
 
 const othersItems: NavItem[] = [
   {
     name: "User Profile",
     icon: <UserCircleIcon />,
-    subItems: [{ name: "Profile Details", path: "/form-elements", pro: false },{ name: "Logout", path: "/form-elements", pro: false }],
-  }
-  // {
-  //   icon: <PieChartIcon />,
-  //   name: "Charts",
-  //   subItems: [
-  //     { name: "Line Chart", path: "/line-chart", pro: false },
-  //     { name: "Bar Chart", path: "/bar-chart", pro: false },
-  //   ],
-  // },
-  // {
-  //   icon: <BoxCubeIcon />,
-  //   name: "UI Elements",
-  //   subItems: [
-  //     { name: "Alerts", path: "/alerts", pro: false },
-  //     { name: "Avatar", path: "/avatars", pro: false },
-  //     { name: "Badge", path: "/badge", pro: false },
-  //     { name: "Buttons", path: "/buttons", pro: false },
-  //     { name: "Images", path: "/images", pro: false },
-  //     { name: "Videos", path: "/videos", pro: false },
-  //   ],
-  // },
-  // {
-  //   icon: <PlugInIcon />,
-  //   name: "Authentication",
-  //   subItems: [
-  //     { name: "Sign In", path: "/signin", pro: false },
-  //     { name: "Sign Up", path: "/signup", pro: false },
-  //   ],
-  // },
+    subItems: [{ name: "Profile Details", path: "/user-profile", pro: false },{ name: "User management", path: "/user-management", pro: false },{ name: "Logout", path: "/form-elements", pro: false }],
+  },
 ];
 
 const AppSidebar: React.FC = () => {
