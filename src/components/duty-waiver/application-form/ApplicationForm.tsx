@@ -79,18 +79,48 @@ export default function ApplicationForm() {
   };
 
   const handleSubmit = async (e: React.MouseEvent) => {
-      e.preventDefault(); // Prevent default form submission
-      try {
-          const createdApp = await createDraft({
-              ...formData,
-              status: "Draft",
-              submissionDate: new Date().toISOString()
-          });
-          // Handle successful creation
-      } catch (error) {
-          // Error is already handled in the hook
-      }
+    e.preventDefault();
+  
+    const fullFormData: ApplicationProps = {
+      ...formData, // Keep static values like userId, companyId
+      projectName: projectDetails.projectName,
+      projectDescription: projectDetails.projectDescription,
+      projectDistrict: projectDetails.projectDistrict,
+      projectPhysicalAddress: projectDetails.projectPhysicalAddress,
+      reasonForApplying: projectDetails.reasonForApplying,
+      projectValue: parseFloat(projectDetails.projectValue),
+      currency: "MWK",
+      startDate: projectDetails.startDate?.toISOString().split('T')[0] || "",
+      endDate: projectDetails.endDate?.toISOString().split('T')[0] || "",
+      attachments: attachments.map(att => ({
+        documentType: att.type,
+        filePath: att.file?.name || "" // Adjust if uploading files separately
+      })),
+      items: items.map(item => ({
+        description: item.description,
+        hscode: item.hsCode,
+        quantity: item.quantity,
+        value: item.value,
+        currency: "MWK",
+        dutyAmount: 200, // Example value, replace with actual calculation
+        uomId: 1
+      })),
+      submissionDate: new Date().toISOString(),
+      status: "Draft",
+      userId: 7,
+      companyId: 2,
+      applicationTypeId: 1
+    };
+  
+    try {
+      await createDraft(fullFormData);
+      alert("Draft saved successfully!");
+      // Optionally: reset form or redirect
+    } catch (error) {
+      console.error("Error saving draft:", error);
+    }
   };
+  
 
   return (
     <div className="mx-auto">
@@ -154,12 +184,6 @@ export default function ApplicationForm() {
               </button>
               {error && <div className="error-message">{error}</div>}
             </div>
-            // <button
-            //   onClick={() => alert('Application submitted!')}
-            //   className="ml-auto px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-            // >
-            //   Submit Application
-            // </button>
           )}
         </div>
       </ComponentCard>
