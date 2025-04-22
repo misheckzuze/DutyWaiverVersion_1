@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ComponentCard from '../../common/ComponentCard';
 import { ProgressSteps } from './ProgressSteps';
 import { ProjectDetailsStep } from './ProjectDetailsStep';
@@ -11,6 +11,7 @@ import { Item } from '@/types/ItemModel';
 import { Attachment } from '@/types/AttachmentModel';
 import useApplication from '@/hooks/useApplications';
 import { ApplicationProps } from '@/types/Application';
+import { useRouter } from "next/navigation";
 
 export default function ApplicationForm() {
   const [currentStep, setCurrentStep] = useState(1);
@@ -27,35 +28,66 @@ export default function ApplicationForm() {
     endDate: null
   });
 
+  const router = useRouter();
+
   const [items, setItems] = useState<Item[]>([]);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [userData, setUserData] = useState<{ userId: number; tin: string }>({ 
+    userId: 0, 
+    tin: "" 
+  });
 
   const { 
     application, 
     error, 
     isLoading, 
     createDraft 
-} = useApplication();
+  } = useApplication();
 
- // Store form data in state
- const [formData, setFormData] = useState<ApplicationProps>({
-  userId: 0, // Initialize with default values
-  companyId: 0,
-  submissionDate: new Date().toISOString(),
-  applicationTypeId: 0,
-  status: "Draft",
-  projectName: "",
-  projectDescription: "",
-  projectDistrict: "",
-  projectPhysicalAddress: "",
-  reasonForApplying: "",
-  projectValue: 0,
-  currency: "MWK",
-  startDate: "",
-  endDate: "",
-  attachments: [],
-  items: []
-});
+  // Load user data from localStorage on component mount
+  useEffect(() => {
+    const authData = JSON.parse(localStorage.getItem('authData') || '{}');
+    const userId = authData?.id || 0;
+    const tin = authData?.companyTIN || "";
+    
+    console.log("Loaded authData from localStorage:", authData); // Debug log
+    console.log("Extracted userId:", userId, "tin:", tin); // Debug log
+    
+    setUserData({
+      userId,
+      tin
+    });
+  }, []);
+
+  // Store form data in state
+  const [formData, setFormData] = useState<ApplicationProps>({
+    userId: userData.userId,
+    tin: userData.tin,
+    submissionDate: new Date().toISOString(),
+    applicationTypeId: 0,
+    status: "Draft",
+    projectName: "",
+    projectDescription: "",
+    projectDistrict: "",
+    projectPhysicalAddress: "",
+    reasonForApplying: "",
+    projectValue: 0,
+    currency: "MWK",
+    startDate: "",
+    endDate: "",
+    attachments: [],
+    items: []
+  });
+
+  // Update formData when userData changes
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      userId: userData.userId,
+      tin: userData.tin
+    }));
+    console.log("Updated formData with user details:", formData); // Debug log
+  }, [userData]);
 
   const handleNextStep = () => {
     if (currentStep < 4) setCurrentStep(currentStep + 1);
@@ -69,20 +101,27 @@ export default function ApplicationForm() {
     setProjectDetails(prev => ({ ...prev, ...updatedDetails }));
   };
 
-    // Update form data when inputs change
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      const { name, value } = e.target;
-      setFormData(prev => ({
-          ...prev,
-          [name]: value
-      }));
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleSubmit = async (e: React.MouseEvent) => {
     e.preventDefault();
   
+    console.log("Submitting form with userData:", userData); // Debug log
+    
+    if (!userData.userId || !userData.tin) {
+      console.error("Missing user data - userId:", userData.userId, "tin:", userData.tin);
+      alert("User information is missing. Please ensure you're logged in.");
+      return;
+    }
+
     const fullFormData: ApplicationProps = {
-      ...formData, // Keep static values like userId, companyId
+      ...formData,
       projectName: projectDetails.projectName,
       projectDescription: projectDetails.projectDescription,
       projectDistrict: projectDetails.projectDistrict,
@@ -94,7 +133,7 @@ export default function ApplicationForm() {
       endDate: projectDetails.endDate?.toISOString().split('T')[0] || "",
       attachments: attachments.map(att => ({
         documentType: att.type,
-        filePath: att.file?.name || "" // Adjust if uploading files separately
+        filePath: att.file?.name || ""
       })),
       items: items.map(item => ({
         description: item.description,
@@ -102,25 +141,26 @@ export default function ApplicationForm() {
         quantity: item.quantity,
         value: item.value,
         currency: "MWK",
-        dutyAmount: 200, // Example value, replace with actual calculation
+        dutyAmount: 200,
         uomId: 1
       })),
       submissionDate: new Date().toISOString(),
       status: "Draft",
-      userId: 7,
-      companyId: 2,
+      userId: userData.userId,
+      tin: userData.tin,
       applicationTypeId: 1
     };
+
+    console.log("Final form data being submitted:", fullFormData); // Debug log
   
     try {
       await createDraft(fullFormData);
+      router.push("/my-applications");
       alert("Draft saved successfully!");
-      // Optionally: reset form or redirect
     } catch (error) {
       console.error("Error saving draft:", error);
     }
   };
-  
 
   return (
     <div className="mx-auto">
@@ -174,7 +214,6 @@ export default function ApplicationForm() {
             </button>
           ) : (
             <div>
-              {/* Your form implementation */}
               <button
                 onClick={handleSubmit}
                 disabled={isLoading}

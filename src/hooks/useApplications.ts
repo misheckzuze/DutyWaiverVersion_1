@@ -46,9 +46,9 @@ export default function useApplication() {
 
         try {
             const authData = JSON.parse(localStorage.getItem('authData') || '{}');
-            const tin = authData?.tin || authData?.Tin;
+            const tin = authData?.companyTIN || authData?.companyTIN;
 
-            if (!tin) throw new Error('TIN not found in local storage.');
+            if (!tin) throw new Error('TIN not found.');
 
             const response = await axios.post('/api/v1/applications/by-tin', { Tin: tin });
             setApplications(response.data.data);

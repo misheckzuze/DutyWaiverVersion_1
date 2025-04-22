@@ -15,7 +15,7 @@ export interface ApplicationAttachment {
 
 export interface ApplicationProps {
     userId: number;
-    companyId: number;
+    tin: string;
     submissionDate: string;
     applicationTypeId: number;
     status: "Draft" | "Submitted" | "Approved" | "Rejected";
