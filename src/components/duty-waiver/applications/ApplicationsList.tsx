@@ -1,47 +1,20 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import { ApplicationsTable } from './ApplicationsTable';
 import { Application } from '@/types/ApplicationModel';
+import useApplication from '@/hooks/useApplications';
 
 const ApplicationsList = () => {
-  const [applications, setApplications] = useState<Application[]>([
-    {
-      id: '1',
-      projectName: 'New Hospital Construction',
-      projectType: 'Healthcare',
-      projectValue: 25000000,
-      status: 'draft',
-      createdAt: new Date('2023-05-15'),
-      updatedAt: new Date('2023-05-15'),
-    },
-    {
-      id: '2',
-      projectName: 'Rural School Expansion',
-      projectType: 'Education',
-      projectValue: 12000000,
-      status: 'submitted',
-      createdAt: new Date('2023-06-10'),
-      updatedAt: new Date('2023-06-12'),
-    },
-    {
-      id: '3',
-      projectName: 'Agricultural Irrigation System',
-      projectType: 'Agriculture',
-      projectValue: 18000000,
-      status: 'approved',
-      createdAt: new Date('2023-07-01'),
-      updatedAt: new Date('2023-07-15'),
-    },
-    {
-      id: '4',
-      projectName: 'Renewable Energy Grid',
-      projectType: 'Energy',
-      projectValue: 30000000,
-      status: 'rejected',
-      createdAt: new Date('2023-08-20'),
-      updatedAt: new Date('2023-08-25'),
-    }
-  ]);
+  const {
+    getApplicationsByTIN,
+    applications,
+    isLoading,
+    error
+  } = useApplication();
+
+  useEffect(() => {
+    getApplicationsByTIN();
+  }, []);
 
   const handleEdit = (id: string) => {
     // Handle edit logic
@@ -58,12 +31,29 @@ const ApplicationsList = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold text-gray-800 mb-6">My Applications</h1>
-      <ApplicationsTable
-        applications={applications}
-        onEdit={handleEdit}
-        onCancel={handleCancel}
-        onView={handleView}
-      />
+
+      {isLoading ? (
+        <p>Loading applications...</p>
+      ) : error ? (
+        <p className="text-red-500">{error}</p>
+      ) : applications.length === 0 ? (
+        <p className="text-gray-600">No applications found.</p>
+      ) : (
+        <ApplicationsTable
+          applications={applications.map(app => ({
+            id: app.id.toString(),
+            projectName: app.projectName,
+            projectType: `Type ${app.applicationTypeId}`, // Replace with real label if available
+            projectValue: app.projectValue,
+            status: app.status.toLowerCase(),
+            createdAt: new Date(app.submissionDate),
+            updatedAt: new Date(app.submissionDate), // Replace with updatedDate if available
+          }))}
+          onEdit={handleEdit}
+          onCancel={handleCancel}
+          onView={handleView}
+        />
+      )}
     </div>
   );
 };
