@@ -1,10 +1,10 @@
 'use client';
 
 import { User } from '@/types/UserModel';
-import React, { useState } from 'react';
+import React from 'react';
 import Label from '@/components/ui-utils/Label';
 import Input from '@/components/ui-utils/input/InputField';
-import Select from '@/components/ui-utils/Select';
+import Select from '@/components/ui-utils/Select'; // Your custom Select component
 import Button from '@/components/ui/button/Button';
 import { Modal } from '@/components/ui/modal';
 import { ChevronDownIcon } from '@/icons';
@@ -17,21 +17,21 @@ type Props = {
   setFormData: React.Dispatch<React.SetStateAction<Omit<User, 'id' | 'createdAt'>>>;
 };
 
-const UserModal = ({ isOpen, onClose, onSave, formData, setFormData }: Props) => {
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    const newValue =
-      e.target instanceof HTMLInputElement && e.target.type === 'checkbox'
-        ? e.target.checked
-        : name === 'role'
-        ? (value as 'admin' | 'user' | 'moderator')
-        : value;
+// Define role options for the Select component
+const roleOptions = [
+  { value: 'admin', label: 'Admin' },
+  { value: 'moderator', label: 'Moderator' },
+  { value: 'user', label: 'User' },
+];
 
+const UserModal = ({ isOpen, onClose, onSave, formData, setFormData }: Props) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type, checked } = e.target;
+    const newValue = type === 'checkbox' ? checked : value;
     setFormData({ ...formData, [name]: newValue });
   };
 
-  // Role Select handler
-const handleSelectChange = (value: string) => {
+  const handleRoleChange = (value: string) => {
     setFormData({ ...formData, role: value as 'admin' | 'moderator' | 'user' });
   };
 
@@ -98,21 +98,18 @@ const handleSelectChange = (value: string) => {
 
         <div className="relative">
           <Label>Role*</Label>
-          {/* <Select
-            name="role"
-            value={formData.role}
-            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleChange(e)}
+          <Select
+            options={roleOptions}
+            placeholder="Select role"
+            onChange={handleRoleChange}
             className="w-full dark:bg-dark-900"
-          >
-            <option value="">Select role</option>
-            <option value="admin">Admin</option>
-            <option value="moderator">Moderator</option>
-            <option value="user">User</option>
-          </Select> */}
+            defaultValue={formData.role}
+          />
           <span className="absolute text-gray-500 -translate-y-1/2 pointer-events-none right-3 top-1/2 dark:text-gray-400">
             <ChevronDownIcon />
           </span>
         </div>
+        
 
         <div className="flex items-center gap-2">
           <input
