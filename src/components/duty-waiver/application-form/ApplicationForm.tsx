@@ -9,6 +9,8 @@ import { ReviewStep } from './ReviewStep';
 import { ProjectDetails } from '@/types/ProjectDetailsModel';
 import { Item } from '@/types/ItemModel';
 import { Attachment } from '@/types/AttachmentModel';
+import useApplication from '@/hooks/useApplications';
+import { ApplicationProps } from '@/types/Application';
 
 export default function ApplicationForm() {
   const [currentStep, setCurrentStep] = useState(1);
@@ -28,6 +30,33 @@ export default function ApplicationForm() {
   const [items, setItems] = useState<Item[]>([]);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
 
+  const { 
+    application, 
+    error, 
+    isLoading, 
+    createDraft 
+} = useApplication();
+
+ // Store form data in state
+ const [formData, setFormData] = useState<ApplicationProps>({
+  userId: 0, // Initialize with default values
+  companyId: 0,
+  submissionDate: new Date().toISOString(),
+  applicationTypeId: 0,
+  status: "Draft",
+  projectName: "",
+  projectDescription: "",
+  projectDistrict: "",
+  projectPhysicalAddress: "",
+  reasonForApplying: "",
+  projectValue: 0,
+  currency: "MWK",
+  startDate: "",
+  endDate: "",
+  attachments: [],
+  items: []
+});
+
   const handleNextStep = () => {
     if (currentStep < 4) setCurrentStep(currentStep + 1);
   };
@@ -40,37 +69,60 @@ export default function ApplicationForm() {
     setProjectDetails(prev => ({ ...prev, ...updatedDetails }));
   };
 
+    // Update form data when inputs change
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const { name, value } = e.target;
+      setFormData(prev => ({
+          ...prev,
+          [name]: value
+      }));
+  };
+
+  const handleSubmit = async (e: React.MouseEvent) => {
+      e.preventDefault(); // Prevent default form submission
+      try {
+          const createdApp = await createDraft({
+              ...formData,
+              status: "Draft",
+              submissionDate: new Date().toISOString()
+          });
+          // Handle successful creation
+      } catch (error) {
+          // Error is already handled in the hook
+      }
+  };
+
   return (
     <div className="mx-auto">
       <ComponentCard title="Duty Waiver Application Form">
         <ProgressSteps currentStep={currentStep} totalSteps={4} />
 
         {currentStep === 1 && (
-          <ProjectDetailsStep 
-            details={projectDetails} 
-            onChange={handleProjectDetailsChange} 
+          <ProjectDetailsStep
+            details={projectDetails}
+            onChange={handleProjectDetailsChange}
           />
         )}
 
         {currentStep === 2 && (
-          <ItemsStep 
-            items={items} 
-            setItems={setItems} 
+          <ItemsStep
+            items={items}
+            setItems={setItems}
           />
         )}
 
         {currentStep === 3 && (
-          <AttachmentsStep 
-            attachments={attachments} 
-            setAttachments={setAttachments} 
+          <AttachmentsStep
+            attachments={attachments}
+            setAttachments={setAttachments}
           />
         )}
 
         {currentStep === 4 && (
-          <ReviewStep 
-            projectDetails={projectDetails} 
-            items={items} 
-            attachments={attachments} 
+          <ReviewStep
+            projectDetails={projectDetails}
+            items={items}
+            attachments={attachments}
           />
         )}
 
@@ -91,12 +143,23 @@ export default function ApplicationForm() {
               Continue
             </button>
           ) : (
-            <button
-              onClick={() => alert('Application submitted!')}
-              className="ml-auto px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-            >
-              Submit Application
-            </button>
+            <div>
+              {/* Your form implementation */}
+              <button
+                onClick={handleSubmit}
+                disabled={isLoading}
+                className="ml-auto px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+              >
+                {isLoading ? 'Saving...' : 'Save Draft'}
+              </button>
+              {error && <div className="error-message">{error}</div>}
+            </div>
+            // <button
+            //   onClick={() => alert('Application submitted!')}
+            //   className="ml-auto px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+            // >
+            //   Submit Application
+            // </button>
           )}
         </div>
       </ComponentCard>
