@@ -45,7 +45,7 @@ const navItems: NavItem[] = [
   {
     icon: <PieChartIcon />,
     name: "Reports",
-    path: "/profile",
+    path: "/reports",
   },
 ];
 
@@ -53,7 +53,7 @@ const othersItems: NavItem[] = [
   {
     name: "User Profile",
     icon: <UserCircleIcon />,
-    subItems: [{ name: "Profile Details", path: "/user-profile", pro: false },{ name: "User management", path: "/user-management", pro: false },{ name: "Logout", path: "/form-elements", pro: false }],
+    subItems: [{ name: "Profile Details", path: "/profile", pro: false },{ name: "User management", path: "/user-management", pro: false },{ name: "Logout", path: "/form-elements", pro: false }],
   },
 ];
 

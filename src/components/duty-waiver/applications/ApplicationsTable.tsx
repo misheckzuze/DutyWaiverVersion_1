@@ -125,15 +125,15 @@ export const ApplicationsTable: React.FC<ApplicationsTableProps> = ({
           </span>
         ),
       },
-      {
-        accessorKey: 'updatedAt',
-        header: 'Last Updated',
-        cell: ({ row }) => (
-          <span className="text-gray-500 text-sm">
-            {new Date(row.getValue('updatedAt')).toLocaleDateString()}
-          </span>
-        ),
-      },
+      // {
+      //   accessorKey: 'updatedAt',
+      //   header: 'Last Updated',
+      //   cell: ({ row }) => (
+      //     <span className="text-gray-500 text-sm">
+      //       {new Date(row.getValue('updatedAt')).toLocaleDateString()}
+      //     </span>
+      //   ),
+      // },
       {
         id: 'actions',
         header: 'Actions',
