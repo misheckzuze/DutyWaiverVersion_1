@@ -1,13 +1,13 @@
 'use client';
-
 import { User } from '@/types/UserModel';
-import React from 'react';
+import React, { useState } from 'react';
 import Label from '@/components/ui-utils/Label';
 import Input from '@/components/ui-utils/input/InputField';
-import Select from '@/components/ui-utils/Select'; // Your custom Select component
+import Select from '@/components/ui-utils/Select';
 import Button from '@/components/ui/button/Button';
 import { Modal } from '@/components/ui/modal';
 import { ChevronDownIcon } from '@/icons';
+import { useUsers } from '@/hooks/useUsers';
 
 type Props = {
   isOpen: boolean;
@@ -15,16 +15,21 @@ type Props = {
   onSave: (user: Omit<User, 'id' | 'createdAt'>) => void;
   formData: Omit<User, 'id' | 'createdAt'>;
   setFormData: React.Dispatch<React.SetStateAction<Omit<User, 'id' | 'createdAt'>>>;
+  tin: string; // Add TIN prop
 };
 
-// Define role options for the Select component
+// Extended role options to match API roleId
 const roleOptions = [
-  { value: 'admin', label: 'Admin' },
-  { value: 'moderator', label: 'Moderator' },
-  { value: 'user', label: 'User' },
+  { value: '1', label: 'Admin' },
+  { value: '2', label: 'Moderator' },
+  { value: '3', label: 'User' },
 ];
 
-const UserModal = ({ isOpen, onClose, onSave, formData, setFormData }: Props) => {
+const UserModal = ({ isOpen, onClose, onSave, formData, setFormData, tin }: Props) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { createUser } = useUsers();
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
     const newValue = type === 'checkbox' ? checked : value;
@@ -32,12 +37,59 @@ const UserModal = ({ isOpen, onClose, onSave, formData, setFormData }: Props) =>
   };
 
   const handleRoleChange = (value: string) => {
-    setFormData({ ...formData, role: value as 'admin' | 'moderator' | 'user' });
+    setFormData({ ...formData, role: value });
   };
 
-  const handleSubmit = () => {
-    onSave(formData);
-    onClose();
+  const handleSubmit = async () => {
+    if (
+      !formData.firstName ||
+      !formData.lastName ||
+      !formData.email ||
+      !formData.phoneNumber ||
+      !formData.role
+    ) {
+      setError('Please fill all required fields');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      // Prepare the API payload
+      const apiPayload = {
+        tin: tin,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        phonenumber: formData.phoneNumber,
+        password: 'defaultPassword', // You might want to add password field
+        roleId: parseInt(formData.role),
+      };
+
+      const response = await createUser(apiPayload);
+
+      if (response.success) {
+        // Map the API response to our local user format
+        const localUserData: Omit<User, 'id' | 'createdAt'> = {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          phoneNumber: formData.phoneNumber,
+          role: roleOptions.find(r => r.value === formData.role)?.label || 'User',
+          isActive: true,
+        };
+        
+        onSave(localUserData);
+        onClose();
+      } else {
+        setError(response.message || 'Failed to save user');
+      }
+    } catch (err) {
+      setError('An unexpected error occurred');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -50,6 +102,12 @@ const UserModal = ({ isOpen, onClose, onSave, formData, setFormData }: Props) =>
         <h4 className="mb-6 text-lg font-medium text-gray-800 dark:text-white/90">
           {formData.firstName ? 'Edit User' : 'Add User'}
         </h4>
+
+        {error && (
+          <div className="p-4 bg-red-100 text-red-700 rounded-lg mb-4">
+            {error}
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-4">
           <div>
@@ -109,7 +167,6 @@ const UserModal = ({ isOpen, onClose, onSave, formData, setFormData }: Props) =>
             <ChevronDownIcon />
           </span>
         </div>
-        
 
         <div className="flex items-center gap-2">
           <input
@@ -127,6 +184,7 @@ const UserModal = ({ isOpen, onClose, onSave, formData, setFormData }: Props) =>
             onClick={onClose}
             variant="outline"
             className="border-gray-300"
+            disabled={isSubmitting}
           >
             Cancel
           </Button>
@@ -134,6 +192,7 @@ const UserModal = ({ isOpen, onClose, onSave, formData, setFormData }: Props) =>
             onClick={handleSubmit}
             className="bg-blue-600 hover:bg-blue-700 text-white"
             disabled={
+              isSubmitting ||
               !formData.firstName ||
               !formData.lastName ||
               !formData.email ||
@@ -141,7 +200,7 @@ const UserModal = ({ isOpen, onClose, onSave, formData, setFormData }: Props) =>
               !formData.role
             }
           >
-            Save User
+            {isSubmitting ? 'Saving...' : 'Save User'}
           </Button>
         </div>
       </div>
