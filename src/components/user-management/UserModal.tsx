@@ -13,31 +13,32 @@ type Props = {
   isOpen: boolean;
   onClose: () => void;
   onSave: (user: Omit<User, 'id' | 'createdAt'>) => void;
-  formData: Omit<User, 'id' | 'createdAt'>;
-  setFormData: React.Dispatch<React.SetStateAction<Omit<User, 'id' | 'createdAt'>>>;
-  tin: string; // Add TIN prop
+  formData: Omit<User, 'id' | 'createdAt'> & { password: string; id?: string };
+  setFormData: React.Dispatch<React.SetStateAction<Omit<User, 'id' | 'createdAt'> & { password: string; id?: string }>>;
+  tin: string;
+  selectedUser: User | null;
 };
 
-// Extended role options to match API roleId
 const roleOptions = [
   { value: '1', label: 'Admin' },
   { value: '2', label: 'Moderator' },
   { value: '3', label: 'User' },
 ];
 
-const UserModal = ({ isOpen, onClose, onSave, formData, setFormData, tin }: Props) => {
+const UserModal = ({ isOpen, onClose, onSave, formData, setFormData, tin, selectedUser }: Props) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { createUser } = useUsers();
+  const [showPassword, setShowPassword] = useState(false);
+  const { createUser, updateUser } = useUsers();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
     const newValue = type === 'checkbox' ? checked : value;
-    setFormData({ ...formData, [name]: newValue });
+    setFormData(prev => ({ ...prev, [name]: newValue }));
   };
 
   const handleRoleChange = (value: string) => {
-    setFormData({ ...formData, role: value });
+    setFormData(prev => ({ ...prev, role: value }));
   };
 
   const handleSubmit = async () => {
@@ -52,34 +53,60 @@ const UserModal = ({ isOpen, onClose, onSave, formData, setFormData, tin }: Prop
       return;
     }
 
+    // Only require password for new users
+    if (!selectedUser && (!formData.password || formData.password.length < 8)) {
+      setError('Password must be at least 8 characters');
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
 
     try {
-      // Prepare the API payload
-      const apiPayload = {
-        tin: tin,
+      const authData = JSON.parse(localStorage.getItem('authData') || '{}');
+      const companyTin = authData?.companyTIN || authData?.companyTIN;
+
+      if (!companyTin) {
+        setError('No company TIN found');
+        return;
+      }
+
+      const basePayload = {
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
         phonenumber: formData.phoneNumber,
-        password: 'defaultPassword', // You might want to add password field
         roleId: parseInt(formData.role),
       };
 
-      const response = await createUser(apiPayload);
+      let response;
+      
+      if (selectedUser) {
+        // Update existing user
+        response = await updateUser(selectedUser.id, {
+          ...basePayload,
+          // Only include password if it was changed (not empty)
+          ...(formData.password && { password: formData.password })
+        });
+      } else {
+        // Create new user
+        response = await createUser({
+          ...basePayload,
+          tin: companyTin,
+          password: formData.password
+        });
+      }
 
       if (response.success) {
-        // Map the API response to our local user format
         const localUserData: Omit<User, 'id' | 'createdAt'> = {
           firstName: formData.firstName,
           lastName: formData.lastName,
           email: formData.email,
           phoneNumber: formData.phoneNumber,
           role: roleOptions.find(r => r.value === formData.role)?.label || 'User',
-          isActive: true,
+          isActive: formData.isActive,
         };
-        
+
         onSave(localUserData);
         onClose();
       } else {
@@ -100,7 +127,7 @@ const UserModal = ({ isOpen, onClose, onSave, formData, setFormData, tin }: Prop
     >
       <div className="space-y-4">
         <h4 className="mb-6 text-lg font-medium text-gray-800 dark:text-white/90">
-          {formData.firstName ? 'Edit User' : 'Add User'}
+          {selectedUser ? 'Edit User' : 'Add User'}
         </h4>
 
         {error && (
@@ -154,6 +181,27 @@ const UserModal = ({ isOpen, onClose, onSave, formData, setFormData, tin }: Prop
           />
         </div>
 
+        {/* Password field - only required for new users or when changing password */}
+        <div>
+          <Label>{selectedUser ? 'New Password (leave blank to keep current)' : 'Password*'}</Label>
+          <div className="relative">
+            <Input
+              name="password"
+              type={showPassword ? "text" : "password"}
+              value={formData.password}
+              onChange={handleChange}
+              placeholder={selectedUser ? "Enter new password" : "Enter password (min 8 characters)"}
+            />
+            <button
+              type="button"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-gray-500 hover:text-gray-700"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? 'Hide' : 'Show'}
+            </button>
+          </div>
+        </div>
+
         <div className="relative">
           <Label>Role*</Label>
           <Select
@@ -197,7 +245,8 @@ const UserModal = ({ isOpen, onClose, onSave, formData, setFormData, tin }: Prop
               !formData.lastName ||
               !formData.email ||
               !formData.phoneNumber ||
-              !formData.role
+              !formData.role ||
+              (!selectedUser && (!formData.password || formData.password.length < 8))
             }
           >
             {isSubmitting ? 'Saving...' : 'Save User'}

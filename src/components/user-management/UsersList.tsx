@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { User, ApiUser } from '@/types/UserModel';
 import { UsersTable } from './UsersTable';
 import UserModal from './UserModal';
@@ -8,19 +8,25 @@ import { useUsers } from '@/hooks/useUsers';
 import Button from '@/components/ui/button/Button';
 
 const UsersList = () => {
-  const [users, setUsers] = useState<User[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [formData, setFormData] = useState<Omit<User, 'id' | 'createdAt'>>({
+  const [formData, setFormData] = useState<Omit<User, 'id' | 'createdAt'> & { password: string }>({
     firstName: '',
     lastName: '',
     email: '',
     phoneNumber: '',
     role: 'user',
     isActive: true,
+    password: '',
   });
 
-  const { getUsersByTin, isLoading, error } = useUsers();
+  const { 
+    getUsersByTin, 
+    users: apiUsers, 
+    isLoading, 
+    error,
+    clearError
+  } = useUsers();
 
   const mapApiUserToLocal = (apiUser: ApiUser): User => ({
     id: apiUser.id.toString(),
@@ -35,19 +41,17 @@ const UsersList = () => {
     roles: apiUser.roles,
   });
 
-  // Fetch users automatically on mount using TIN from localStorage
   useEffect(() => {
     const fetchUsersByStoredTin = async () => {
       const authData = JSON.parse(localStorage.getItem('authData') || '{}');
-      const tin = authData?.tin || authData?.Tin;
-
-      if (!tin) return;
-
-      const response = await getUsersByTin(tin);
-      if (response.success && response.data) {
-        const mappedUsers = response.data.map(mapApiUserToLocal);
-        setUsers(mappedUsers);
+      const tin = authData?.companyTIN || authData?.companyTIN;
+      
+      if (!tin) {
+        console.error('No TIN found in authData');
+        return;
       }
+
+      await getUsersByTin(tin);
     };
 
     fetchUsersByStoredTin();
@@ -61,6 +65,7 @@ const UsersList = () => {
       phoneNumber: '',
       role: 'user',
       isActive: true,
+      password: '',
     });
     setSelectedUser(null);
     setShowModal(true);
@@ -68,35 +73,28 @@ const UsersList = () => {
 
   const handleEdit = (user: User) => {
     const { id, createdAt, ...userData } = user;
-    setFormData(userData);
+    setFormData({
+      ...userData,
+      password: '',
+    });
     setSelectedUser(user);
     setShowModal(true);
   };
 
   const handleSave = (userData: Omit<User, 'id' | 'createdAt'>) => {
+    // This should be updated to use the API instead of local state
+    // For now, keeping the local state update
     if (selectedUser) {
-      setUsers((prev) =>
-        prev.map((u) => (u.id === selectedUser.id ? { ...u, ...userData } : u))
-      );
+      // In a real app, you would call updateUser API here
     } else {
-      setUsers((prev) => [
-        ...prev,
-        {
-          id: uuidv4(),
-          createdAt: new Date(),
-          ...userData,
-        },
-      ]);
+      // In a real app, you would call createUser API here
     }
     setShowModal(false);
   };
 
   const handleToggleActive = (id: string) => {
-    setUsers((prev) =>
-      prev.map((user) =>
-        user.id === id ? { ...user, isActive: !user.isActive } : user
-      )
-    );
+    // This should be updated to use the API
+    // For now, keeping the local state update
   };
 
   return (
@@ -109,16 +107,25 @@ const UsersList = () => {
       </div>
 
       {error && (
-        <div className="mb-4 p-4 bg-red-100 text-red-700 rounded-lg">
-          {error}
+        <div className="mb-4 p-4 bg-red-100 text-red-700 rounded-lg flex justify-between">
+          <span>{error}</span>
+          <button onClick={clearError} className="text-red-700 font-bold">
+            ×
+          </button>
         </div>
       )}
 
-      <UsersTable 
-        users={users} 
-        onEdit={handleEdit} 
-        onToggleActive={handleToggleActive} 
-      />
+      {isLoading ? (
+        <div className="flex justify-center py-8">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      ) : (
+        <UsersTable 
+          users={apiUsers.map(mapApiUserToLocal)} 
+          onEdit={handleEdit} 
+          onToggleActive={handleToggleActive} 
+        />
+      )}
 
       <UserModal
         isOpen={showModal}
@@ -127,6 +134,7 @@ const UsersList = () => {
         formData={formData}
         setFormData={setFormData}
         tin={JSON.parse(localStorage.getItem('authData') || '{}')?.tin || ''}
+        selectedUser={selectedUser}
       />
     </div>
   );

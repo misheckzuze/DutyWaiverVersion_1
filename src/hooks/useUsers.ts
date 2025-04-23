@@ -1,4 +1,4 @@
-// hooks/useUsers.ts
+import axios from '@/lib/axios';
 import { useState } from 'react';
 
 type UserResponse = {
@@ -17,40 +17,25 @@ type CreateUserPayload = {
   roleId: number;
 };
 
-type UsersByTinPayload = {
-  Tin: string;
-};
-
 export const useUsers = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [users, setUsers] = useState<any[]>([]);
+  const [user, setUser] = useState<any | null>(null);
 
   const createUser = async (userData: CreateUserPayload): Promise<UserResponse> => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
-      const response = await fetch('/api/v1/users', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to create user');
-      }
-
+      const response = await axios.post('/api/v1/users', userData);
       return {
         success: true,
-        message: data.message || 'Registration successful',
-        data: data.data,
+        message: response.data.message || 'Registration successful',
+        data: response.data.data,
       };
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to create user';
+    } catch (error: any) {
+      const message = error.response?.data?.message || error.message || 'Failed to create user';
       setError(message);
       return {
         success: false,
@@ -64,29 +49,17 @@ export const useUsers = () => {
   const getUsersByTin = async (tin: string): Promise<UserResponse> => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
-      const response = await fetch('/api/v1/users/by-tin', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ Tin: tin }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to fetch users by TIN');
-      }
-
+      const response = await axios.post('/api/v1/users/by-tin', { Tin: tin });
+      setUsers(response.data.data);
       return {
         success: true,
-        message: data.message || `Users for TIN '${tin}' retrieved`,
-        data: data.data,
+        message: response.data.message || `Users for TIN '${tin}' retrieved`,
+        data: response.data.data,
       };
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to fetch users by TIN';
+    } catch (error: any) {
+      const message = error.response?.data?.message || error.message || 'Failed to fetch users by TIN';
       setError(message);
       return {
         success: false,
@@ -100,28 +73,17 @@ export const useUsers = () => {
   const getUserById = async (userId: string): Promise<UserResponse> => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
-      const response = await fetch(`/api/v1/users/${userId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to fetch user');
-      }
-
+      const response = await axios.get(`/api/v1/users/${userId}`);
+      setUser(response.data.data);
       return {
         success: true,
-        message: data.message || 'User retrieved successfully',
-        data: data.data,
+        message: response.data.message || 'User retrieved successfully',
+        data: response.data.data,
       };
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to fetch user';
+    } catch (error: any) {
+      const message = error.response?.data?.message || error.message || 'Failed to fetch user';
       setError(message);
       return {
         success: false,
@@ -132,12 +94,45 @@ export const useUsers = () => {
     }
   };
 
+  const updateUser = async (userId: string, userData: Partial<CreateUserPayload>): Promise<UserResponse> => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await axios.put(`/api/v1/users/${userId}`, userData);
+      return {
+        success: true,
+        message: response.data.message || 'User updated successfully',
+        data: response.data.data,
+      };
+    } catch (error: any) {
+      const message = error.response?.data?.message || error.message || 'Failed to update user';
+      setError(message);
+      return {
+        success: false,
+        message,
+      };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+
+  const clearError = () => setError(null);
+  const clearUser = () => setUser(null);
+  const clearUsers = () => setUsers([]);
+
   return {
     createUser,
+    updateUser,
     getUsersByTin,
     getUserById,
+    users,
+    user,
     isLoading,
     error,
-    clearError: () => setError(null),
+    clearError,
+    clearUser,
+    clearUsers,
   };
 };
