@@ -26,7 +26,6 @@ export const useUsers = () => {
   const createUser = async (userData: CreateUserPayload): Promise<UserResponse> => {
     setIsLoading(true);
     setError(null);
-
     try {
       const response = await axios.post('/api/v1/users', userData);
       return {
@@ -49,7 +48,6 @@ export const useUsers = () => {
   const getUsersByTin = async (tin: string): Promise<UserResponse> => {
     setIsLoading(true);
     setError(null);
-
     try {
       const response = await axios.post('/api/v1/users/by-tin', { Tin: tin });
       setUsers(response.data.data);
@@ -73,7 +71,6 @@ export const useUsers = () => {
   const getUserById = async (userId: string): Promise<UserResponse> => {
     setIsLoading(true);
     setError(null);
-
     try {
       const response = await axios.get(`/api/v1/users/${userId}`);
       setUser(response.data.data);
@@ -94,10 +91,12 @@ export const useUsers = () => {
     }
   };
 
-  const updateUser = async (userId: string, userData: Partial<CreateUserPayload>): Promise<UserResponse> => {
+  const updateUser = async (
+    userId: string,
+    userData: Partial<CreateUserPayload>
+  ): Promise<UserResponse> => {
     setIsLoading(true);
     setError(null);
-
     try {
       const response = await axios.put(`/api/v1/users/${userId}`, userData);
       return {
@@ -117,6 +116,28 @@ export const useUsers = () => {
     }
   };
 
+  // 🔄 Toggle user status (activate/deactivate)
+  const toggleUserStatus = async (userId: string, isActive: boolean): Promise<UserResponse> => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await axios.put(`/api/v1/users/${userId}/change-status`, { isActive });
+      return {
+        success: true,
+        message: response.data.message || `User has been ${isActive ? 'activated' : 'deactivated'}`,
+        data: response.data.data,
+      };
+    } catch (error: any) {
+      const message = error.response?.data?.message || error.message || 'Failed to change user status';
+      setError(message);
+      return {
+        success: false,
+        message,
+      };
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const clearError = () => setError(null);
   const clearUser = () => setUser(null);
@@ -127,6 +148,7 @@ export const useUsers = () => {
     updateUser,
     getUsersByTin,
     getUserById,
+    toggleUserStatus,
     users,
     user,
     isLoading,

@@ -3,10 +3,12 @@ import React, { useEffect, useState } from 'react';
 import { User, ApiUser } from '@/types/UserModel';
 import { UsersTable } from './UsersTable';
 import UserModal from './UserModal';
-import { v4 as uuidv4 } from 'uuid';
 import { useUsers } from '@/hooks/useUsers';
 import Button from '@/components/ui/button/Button';
 import Loader from '../ui-utils/Loader';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
 
 const UsersList = () => {
   const [showModal, setShowModal] = useState(false);
@@ -25,8 +27,9 @@ const UsersList = () => {
     getUsersByTin, 
     users: apiUsers, 
     isLoading, 
-    error,
-    clearError
+    error, 
+    clearError,
+    toggleUserStatus 
   } = useUsers();
 
   const mapApiUserToLocal = (apiUser: ApiUser): User => ({
@@ -42,19 +45,19 @@ const UsersList = () => {
     roles: apiUser.roles,
   });
 
+  const fetchUsersByStoredTin = async () => {
+    const authData = JSON.parse(localStorage.getItem('authData') || '{}');
+    const tin = authData?.companyTIN;
+    
+    if (!tin) {
+      console.error('No TIN found in authData');
+      return;
+    }
+
+    await getUsersByTin(tin);
+  };
+
   useEffect(() => {
-    const fetchUsersByStoredTin = async () => {
-      const authData = JSON.parse(localStorage.getItem('authData') || '{}');
-      const tin = authData?.companyTIN || authData?.companyTIN;
-      
-      if (!tin) {
-        console.error('No TIN found in authData');
-        return;
-      }
-
-      await getUsersByTin(tin);
-    };
-
     fetchUsersByStoredTin();
   }, []);
 
@@ -83,20 +86,30 @@ const UsersList = () => {
   };
 
   const handleSave = (userData: Omit<User, 'id' | 'createdAt'>) => {
-    // This should be updated to use the API instead of local state
-    // For now, keeping the local state update
-    if (selectedUser) {
-      // In a real app, you would call updateUser API here
-    } else {
-      // In a real app, you would call createUser API here
-    }
+    // You can implement create/update logic here
     setShowModal(false);
   };
 
-  const handleToggleActive = (id: string) => {
-    // This should be updated to use the API
-    // For now, keeping the local state update
+  const handleToggleActive = async (id: string) => {
+    const userToToggle = apiUsers.find((u) => u.id.toString() === id);
+    if (!userToToggle) return;
+  
+    const newStatus = !userToToggle.isActive;
+    const actionText = newStatus ? 'activate' : 'deactivate';
+  
+    const confirm = window.confirm(`Are you sure you want to ${actionText} this user?`);
+    if (!confirm) return;
+  
+    const res = await toggleUserStatus(id, newStatus);
+  
+    if (res.success) {
+      toast.success(`User ${newStatus ? 'activated' : 'deactivated'} successfully`);
+      await fetchUsersByStoredTin(); // Refresh users list
+    } else {
+      toast.error(`Failed to ${actionText} user: ${res.message}`);
+    }
   };
+  
 
   return (
     <div className="px-6 py-8">
@@ -110,14 +123,12 @@ const UsersList = () => {
       {error && (
         <div className="mb-4 p-4 bg-red-100 text-red-700 rounded-lg flex justify-between">
           <span>{error}</span>
-          <button onClick={clearError} className="text-red-700 font-bold">
-            ×
-          </button>
+          <button onClick={clearError} className="text-red-700 font-bold">×</button>
         </div>
       )}
 
-{isLoading ? (
-       <Loader/>
+      {isLoading ? (
+        <Loader />
       ) : (
         <UsersTable 
           users={apiUsers.map(mapApiUserToLocal)} 

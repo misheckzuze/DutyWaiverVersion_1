@@ -4,6 +4,7 @@ import './globals.css';
 import { SidebarProvider } from '@/context/SidebarContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { AuthProvider } from '@/hooks/useAuth';
+import { ToastContainer } from 'react-toastify';
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -21,6 +22,8 @@ export default function RootLayout({
           <SidebarProvider>
             <AuthProvider>{children}</AuthProvider>
           </SidebarProvider>
+          <ToastContainer />
+          <ToastContainer />
         </ThemeProvider>
       </body>
     </html>
