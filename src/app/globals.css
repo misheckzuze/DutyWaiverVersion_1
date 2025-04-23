@@ -739,3 +739,10 @@ span.flatpickr-weekday,
   opacity: 0.8;
   cursor: grabbing; /* Changes the cursor to indicate dragging */
 }
+
+.dialog-overlay {
+  z-index: 9998;
+}
+.dialog-content {
+  z-index: 9999;
+}

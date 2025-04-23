@@ -8,7 +8,7 @@ import Button from '@/components/ui/button/Button';
 import Loader from '../ui-utils/Loader';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-
+import ConfirmationDialog from '../ui-utils/ConfirmationDialog';
 
 const UsersList = () => {
   const [showModal, setShowModal] = useState(false);
@@ -21,6 +21,12 @@ const UsersList = () => {
     role: 'user',
     isActive: true,
     password: '',
+  });
+
+  const [confirmationDialog, setConfirmationDialog] = useState({
+    isOpen: false,
+    message: '',
+    onConfirm: () => {},
   });
 
   const { 
@@ -93,23 +99,27 @@ const UsersList = () => {
   const handleToggleActive = async (id: string) => {
     const userToToggle = apiUsers.find((u) => u.id.toString() === id);
     if (!userToToggle) return;
-  
+
     const newStatus = !userToToggle.isActive;
     const actionText = newStatus ? 'activate' : 'deactivate';
-  
-    const confirm = window.confirm(`Are you sure you want to ${actionText} this user?`);
-    if (!confirm) return;
-  
-    const res = await toggleUserStatus(id, newStatus);
-  
-    if (res.success) {
-      toast.success(`User ${newStatus ? 'activated' : 'deactivated'} successfully`);
-      await fetchUsersByStoredTin(); // Refresh users list
-    } else {
-      toast.error(`Failed to ${actionText} user: ${res.message}`);
-    }
+
+    setConfirmationDialog({
+      isOpen: true,
+      message: `Are you sure you want to ${actionText} this user?`,
+      onConfirm: async () => {
+        const res = await toggleUserStatus(id, newStatus);
+
+        if (res.success) {
+          toast.success(`User ${newStatus ? 'activated' : 'deactivated'} successfully`);
+          await fetchUsersByStoredTin(); // Refresh users list
+        } else {
+          toast.error(`Failed to ${actionText} user: ${res.message}`);
+        }
+
+        setConfirmationDialog({ ...confirmationDialog, isOpen: false });
+      },
+    });
   };
-  
 
   return (
     <div className="px-6 py-8">
@@ -145,6 +155,13 @@ const UsersList = () => {
         setFormData={setFormData}
         tin={JSON.parse(localStorage.getItem('authData') || '{}')?.tin || ''}
         selectedUser={selectedUser}
+      />
+
+      <ConfirmationDialog
+        isOpen={confirmationDialog.isOpen}
+        message={confirmationDialog.message}
+        onConfirm={confirmationDialog.onConfirm}
+        onCancel={() => setConfirmationDialog({ ...confirmationDialog, isOpen: false })}
       />
     </div>
   );
