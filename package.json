@@ -24,6 +24,7 @@
     "autoprefixer": "^10.4.20",
     "axios": "^1.8.4",
     "dashboard": "file:",
+    "file-saver": "^2.0.5",
     "flatpickr": "^4.6.13",
     "framer-motion": "^12.8.0",
     "free-nextjs-admin-dashboard": "file:",
@@ -37,11 +38,13 @@
     "react-toastify": "^11.0.5",
     "swiper": "^11.2.0",
     "tailwind-merge": "^2.6.0",
-    "uuid": "^11.1.0"
+    "uuid": "^11.1.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@svgr/webpack": "^8.1.0",
+    "@types/file-saver": "^2.0.7",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
