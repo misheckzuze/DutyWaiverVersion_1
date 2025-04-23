@@ -3,6 +3,7 @@ import React, { useEffect } from 'react';
 import { ApplicationsTable } from './ApplicationsTable';
 import { Application } from '@/types/ApplicationModel';
 import useApplication from '@/hooks/useApplications';
+import Loader from '@/components/ui-utils/Loader';
 
 const ApplicationsList = () => {
   const {
@@ -33,11 +34,7 @@ const ApplicationsList = () => {
       <h1 className="text-2xl font-bold text-gray-800 mb-6">My Applications</h1>
 
       {isLoading ? (
-        <p>Loading applications...</p>
-      ) : error ? (
-        <p className="text-red-500">{error}</p>
-      ) : applications.length === 0 ? (
-        <p className="text-gray-600">No applications found.</p>
+       <Loader/>
       ) : (
         <ApplicationsTable
           applications={applications.map(app => ({

@@ -1,7 +1,7 @@
 "use client";
 import React, { createContext, useState, useContext, ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { RegistrationProps } from "@/types/Registration";
+import { RegistrationProps } from "@/types/RegistrationModel";
 
 interface AuthContextProps {
   token: string | null;

@@ -6,6 +6,7 @@ import UserModal from './UserModal';
 import { v4 as uuidv4 } from 'uuid';
 import { useUsers } from '@/hooks/useUsers';
 import Button from '@/components/ui/button/Button';
+import Loader from '../ui-utils/Loader';
 
 const UsersList = () => {
   const [showModal, setShowModal] = useState(false);
@@ -115,10 +116,8 @@ const UsersList = () => {
         </div>
       )}
 
-      {isLoading ? (
-        <div className="flex justify-center py-8">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-        </div>
+{isLoading ? (
+       <Loader/>
       ) : (
         <UsersTable 
           users={apiUsers.map(mapApiUserToLocal)} 
