@@ -1,7 +1,6 @@
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import { Metadata } from "next";
 import React from "react";
-// import NewApplicationForm from "@/components/duty-waiver/application-form/ApplicationForm";
 import ApplicationForm from "@/components/duty-waiver/application-form/ApplicationForm";
 
 export const metadata: Metadata = {
@@ -16,7 +15,6 @@ export default function FormElements() {
     <div>
       <PageBreadcrumb pageTitle="Duty Waiver Application Form" />
       <div className="px-6">
-        {/* <NewApplicationForm /> */}
         <ApplicationForm />
       </div>
     </div>
