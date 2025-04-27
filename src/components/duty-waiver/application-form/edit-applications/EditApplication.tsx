@@ -38,9 +38,9 @@ export default function EditApplicationForm({ id }: EditApplicationFormProps) {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [isFetching, setIsFetching] = useState(true); // ✅ our own fetching state
+  const [isFetching, setIsFetching] = useState(true);
 
-  const { getApplicationById, updateApplication, error } = useApplication(); // ❌ Don't use hook's isLoading anymore
+  const { getApplicationById, updateApplication, error } = useApplication(); 
 
   useEffect(() => {
     const fetchApplication = async () => {
@@ -74,7 +74,7 @@ export default function EditApplicationForm({ id }: EditApplicationFormProps) {
     if (id) {
       fetchApplication();
     }
-  }, [id]); // ✅ No dependency on getApplicationById or router anymore
+  }, [id]);
 
   const handleNextStep = () => currentStep < 4 && setCurrentStep(currentStep + 1);
   const handlePrevStep = () => currentStep > 1 && setCurrentStep(currentStep - 1);

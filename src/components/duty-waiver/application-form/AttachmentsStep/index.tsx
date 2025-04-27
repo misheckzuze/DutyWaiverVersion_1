@@ -38,7 +38,7 @@ export const AttachmentsStep: React.FC<AttachmentsStepProps> = ({
           {isEditMode ? 'Edit Required Documents' : 'Required Documents'}
         </h3>
 
-        {!isEditMode && ( // ✅ Disable Add Document button in edit mode if needed
+        {/* {!isEditMode && ( // ✅ Disable Add Document button in edit mode if needed */}
           <Button
             onClick={addAttachment}
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
@@ -46,7 +46,7 @@ export const AttachmentsStep: React.FC<AttachmentsStepProps> = ({
             <PlusIcon className="w-4 h-4" />
             Add Document
           </Button>
-        )}
+        {/* )} */}
       </div>
 
       <div className="space-y-4">

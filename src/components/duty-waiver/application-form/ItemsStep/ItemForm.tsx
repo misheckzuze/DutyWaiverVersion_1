@@ -72,7 +72,7 @@ export const ItemForm: React.FC<ItemFormProps> = ({
               : setNewItem({ ...newItem, hsCode: e.target.value })}
             placeholder="HS Code"
             className="w-full"
-            disabled={isEditMode && !editingItemId} // ✅ Disable input if editMode but not editing a specific item
+            // disabled={isEditMode && !editingItemId} // ✅ Disable input if editMode but not editing a specific item
           />
         </div>
 
@@ -89,7 +89,7 @@ export const ItemForm: React.FC<ItemFormProps> = ({
               : setNewItem({ ...newItem, description: e.target.value })}
             placeholder="Item description"
             className="w-full"
-            disabled={isEditMode && !editingItemId}
+            // disabled={isEditMode && !editingItemId}
           />
         </div>
 
@@ -107,7 +107,7 @@ export const ItemForm: React.FC<ItemFormProps> = ({
                 ? setItems(items.map(i => i.id === editingItemId ? { ...i, unitOfMeasure: value } : i))
                 : setNewItem({ ...newItem, unitOfMeasure: value })}
               className="w-full dark:bg-dark-900"
-              disabled={isEditMode && !editingItemId}
+              // disabled={isEditMode && !editingItemId}
             />
             <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
           </div>
@@ -126,7 +126,7 @@ export const ItemForm: React.FC<ItemFormProps> = ({
               : setNewItem({ ...newItem, quantity: parseInt(e.target.value) || 0 })}
             placeholder="Qty"
             className="w-full"
-            disabled={isEditMode && !editingItemId}
+            // disabled={isEditMode && !editingItemId}
           />
         </div>
 
@@ -143,7 +143,7 @@ export const ItemForm: React.FC<ItemFormProps> = ({
               : setNewItem({ ...newItem, value: parseFloat(e.target.value) || 0 })}
             placeholder="Value"
             className="w-full"
-            disabled={isEditMode && !editingItemId}
+            // disabled={isEditMode && !editingItemId}
           />
         </div>
       </div>
@@ -167,7 +167,6 @@ export const ItemForm: React.FC<ItemFormProps> = ({
             Cancel
           </Button>
         )}
-        {!isEditMode && ( // ✅ Only show Save/Add button if not edit mode
           <Button
             onClick={handleSave}
             className="bg-blue-600 hover:bg-blue-700 text-white"
@@ -175,7 +174,6 @@ export const ItemForm: React.FC<ItemFormProps> = ({
           >
             {editingItemId ? 'Update Item' : 'Add Item'}
           </Button>
-        )}
       </div>
     </div>
   );
