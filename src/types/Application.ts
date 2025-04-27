@@ -9,8 +9,8 @@ export interface ApplicationItem {
 }
 
 export interface ApplicationAttachment {
-    documentType: string;
-    filePath: string;
+    type: string;
+    file: string;
 }
 
 export interface ApplicationProps {

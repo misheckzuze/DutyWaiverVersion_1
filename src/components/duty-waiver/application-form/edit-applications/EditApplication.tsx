@@ -107,8 +107,8 @@ export default function EditApplicationForm({ id }: EditApplicationFormProps) {
         startDate: projectDetails.startDate?.toISOString().split('T')[0] || "",
         endDate: projectDetails.endDate?.toISOString().split('T')[0] || "",
         attachments: attachments.map(att => ({
-          documentType: att.documentType,
-          filePath: att.filePath || ""
+          type: att.type,
+          file: att.file?.name || ""
         })),
         items: items.map(item => ({
           description: item.description,
