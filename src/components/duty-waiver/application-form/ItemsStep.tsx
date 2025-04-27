@@ -79,7 +79,6 @@ export const ItemsStep: React.FC<ItemsStepProps> = ({ items, setItems, isEditMod
         </h3>
       </div>
 
-      {!isEditMode && ( // <-- ✅ Only allow upload/download if NOT in edit mode
         <div className="flex gap-4 items-center mb-4">
           <button
             onClick={downloadSampleExcel}
@@ -94,7 +93,6 @@ export const ItemsStep: React.FC<ItemsStepProps> = ({ items, setItems, isEditMod
             className="block text-sm text-gray-700 border border-gray-300 rounded px-4 py-2 cursor-pointer"
           />
         </div>
-      )}
 
       <ItemForm
         items={items}
