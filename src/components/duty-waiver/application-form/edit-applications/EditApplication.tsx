@@ -90,6 +90,7 @@ export default function EditApplicationForm({ id }: EditApplicationFormProps) {
     setIsSubmitting(true);
     try {
       const authData = JSON.parse(localStorage.getItem('authData') || '{}');
+      
 
       const payload: ApplicationProps = {
         userId: authData?.id || 0,
@@ -108,7 +109,7 @@ export default function EditApplicationForm({ id }: EditApplicationFormProps) {
         endDate: projectDetails.endDate?.toISOString().split('T')[0] || "",
         attachments: attachments.map(att => ({
           type: att.type,
-          file: att.file?.name || ""
+          file: att.file?.name || att.file?.toString() || ""
         })),
         items: items.map(item => ({
           description: item.description,
