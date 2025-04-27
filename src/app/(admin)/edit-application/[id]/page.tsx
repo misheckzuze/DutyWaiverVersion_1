@@ -1,4 +1,3 @@
-'use client';
 import React from "react";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import { Metadata } from "next";

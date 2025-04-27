@@ -21,7 +21,7 @@ const ApplicationsList = () => {
   }, []);
 
   const handleEdit = (id: string) => {
-    router.push(`/app/edit-application/${id}`); // ✅ Navigate to edit page
+    router.push(`/edit-application/${id}`); // ✅ Navigate to edit page
   };
 
   const handleCancel = (id: string) => {
