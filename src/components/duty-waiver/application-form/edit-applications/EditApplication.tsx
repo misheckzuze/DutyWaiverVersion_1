@@ -13,7 +13,7 @@ import { Attachment } from '@/types/AttachmentModel';
 import ComponentCard from '@/components/common/ComponentCard';
 import Button from '@/components/ui/button/Button';
 import ConfirmationDialog from '@/components/ui-utils/ConfirmationDialog';
-import { ApplicationProps } from '@/types/Application'; // ApplicationProps for submission
+import { ApplicationProps } from '@/types/Application';
 
 interface EditApplicationFormProps {
   id: string;
@@ -32,17 +32,19 @@ export default function EditApplicationForm({ id }: EditApplicationFormProps) {
     projectValue: '',
     projectDuration: '',
     startDate: null,
-    endDate: null
+    endDate: null,
   });
   const [items, setItems] = useState<Item[]>([]);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [isFetching, setIsFetching] = useState(true); // ✅ our own fetching state
 
-  const { getApplicationById, updateApplication, isLoading, error } = useApplication();
+  const { getApplicationById, updateApplication, error } = useApplication(); // ❌ Don't use hook's isLoading anymore
 
   useEffect(() => {
     const fetchApplication = async () => {
+      setIsFetching(true);
       try {
         const data = await getApplicationById(id);
         if (data) {
@@ -56,7 +58,7 @@ export default function EditApplicationForm({ id }: EditApplicationFormProps) {
             projectValue: data.projectValue?.toString() || '',
             projectDuration: data.projectDuration?.toString() || '',
             startDate: data.startDate ? new Date(data.startDate) : null,
-            endDate: data.endDate ? new Date(data.endDate) : null
+            endDate: data.endDate ? new Date(data.endDate) : null,
           });
           setItems(data.items || []);
           setAttachments(data.attachments || []);
@@ -64,18 +66,19 @@ export default function EditApplicationForm({ id }: EditApplicationFormProps) {
       } catch (err) {
         console.error('Failed to load application:', err);
         router.push('/my-applications');
+      } finally {
+        setIsFetching(false);
       }
     };
 
     if (id) {
       fetchApplication();
     }
-  }, [id, getApplicationById, router]);
+  }, [id]); // ✅ No dependency on getApplicationById or router anymore
 
   const handleNextStep = () => currentStep < 4 && setCurrentStep(currentStep + 1);
   const handlePrevStep = () => currentStep > 1 && setCurrentStep(currentStep - 1);
 
-  // ✅ Fixed: Merge updated fields
   const handleProjectDetailsChange = (updatedFields: Partial<ProjectDetails>) => {
     setProjectDetails(prev => ({
       ...prev,
@@ -130,7 +133,7 @@ export default function EditApplicationForm({ id }: EditApplicationFormProps) {
   return (
     <div className="mx-auto">
       <ComponentCard title={`Edit Application #${id}`}>
-        {isLoading ? (
+        {isFetching ? (
           <div className="flex justify-center py-8">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
           </div>
@@ -141,7 +144,7 @@ export default function EditApplicationForm({ id }: EditApplicationFormProps) {
             {currentStep === 1 && (
               <ProjectDetailsStep
                 details={projectDetails}
-                onChange={handleProjectDetailsChange} // ✅ Correct
+                onChange={handleProjectDetailsChange}
                 isEditMode={true}
               />
             )}
