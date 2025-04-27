@@ -1,11 +1,14 @@
 'use client';
 import React, { useEffect } from 'react';
+import { useRouter } from 'next/navigation'; // ✅ Import router
 import { ApplicationsTable } from './ApplicationsTable';
 import { Application } from '@/types/ApplicationModel';
 import useApplication from '@/hooks/useApplications';
 import Loader from '@/components/ui-utils/Loader';
 
 const ApplicationsList = () => {
+  const router = useRouter(); // ✅ Initialize router
+
   const {
     getApplicationsByTIN,
     applications,
@@ -18,15 +21,15 @@ const ApplicationsList = () => {
   }, []);
 
   const handleEdit = (id: string) => {
-    // Handle edit logic
+    router.push(`/app/edit-application/${id}`); // ✅ Navigate to edit page
   };
 
   const handleCancel = (id: string) => {
-    // Handle cancel logic
+    // Handle cancel logic (optional to implement later)
   };
 
   const handleView = (id: string) => {
-    // Handle view logic
+    // Handle view logic (optional to implement later)
   };
 
   return (
@@ -34,19 +37,19 @@ const ApplicationsList = () => {
       <h1 className="text-2xl font-bold text-gray-800 mb-6">My Applications</h1>
 
       {isLoading ? (
-       <Loader/>
+        <Loader/>
       ) : (
         <ApplicationsTable
           applications={applications.map(app => ({
             id: app.id.toString(),
             projectName: app.projectName,
-            projectType: `Type ${app.applicationTypeId}`, // Replace with real label if available
+            projectType: `Type ${app.applicationTypeId}`, // Replace with real label if needed
             projectValue: app.projectValue,
             status: app.status.toLowerCase(),
             createdAt: new Date(app.submissionDate),
-            updatedAt: new Date(app.submissionDate), // Replace with updatedDate if available
+            updatedAt: new Date(app.submissionDate), // Replace with updatedDate if needed
           }))}
-          onEdit={handleEdit}
+          onEdit={handleEdit} // ✅ Now handleEdit actually routes
           onCancel={handleCancel}
           onView={handleView}
         />

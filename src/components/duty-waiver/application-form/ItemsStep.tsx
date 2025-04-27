@@ -1,4 +1,4 @@
-"use client";
+'use client';
 import React, { useState } from 'react';
 import { Item } from '@/types/ItemModel';
 import { ItemForm } from './ItemsStep/ItemForm';
@@ -9,9 +9,10 @@ import { saveAs } from 'file-saver';
 interface ItemsStepProps {
   items: Item[];
   setItems: React.Dispatch<React.SetStateAction<Item[]>>;
+  isEditMode?: boolean; // <-- ✅ add isEditMode here
 }
 
-export const ItemsStep: React.FC<ItemsStepProps> = ({ items, setItems }) => {
+export const ItemsStep: React.FC<ItemsStepProps> = ({ items, setItems, isEditMode = false }) => {
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
 
   const editItem = (id: string) => {
@@ -70,33 +71,37 @@ export const ItemsStep: React.FC<ItemsStepProps> = ({ items, setItems }) => {
     reader.readAsArrayBuffer(file);
   };
 
-
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Items Requesting Duty Waiver</h3>
+        <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+          {isEditMode ? 'Edit Items' : 'Items Requesting Duty Waiver'}
+        </h3>
       </div>
 
-      <div className="flex gap-4 items-center mb-4">
-        <button
-          onClick={downloadSampleExcel}
-          className="px-4 py-2 bg-blue-100 text-blue-700 border border-blue-300 rounded hover:bg-blue-200"
-        >
-          Download Sample Excel
-        </button>
-        <input
-          type="file"
-          accept=".xlsx"
-          onChange={handleFileUpload}
-          className="block text-sm text-gray-700 border border-gray-300 rounded px-4 py-2 cursor-pointer"
-        />
-      </div>
+      {!isEditMode && ( // <-- ✅ Only allow upload/download if NOT in edit mode
+        <div className="flex gap-4 items-center mb-4">
+          <button
+            onClick={downloadSampleExcel}
+            className="px-4 py-2 bg-blue-100 text-blue-700 border border-blue-300 rounded hover:bg-blue-200"
+          >
+            Download Sample Excel
+          </button>
+          <input
+            type="file"
+            accept=".xlsx"
+            onChange={handleFileUpload}
+            className="block text-sm text-gray-700 border border-gray-300 rounded px-4 py-2 cursor-pointer"
+          />
+        </div>
+      )}
 
       <ItemForm
         items={items}
         editingItemId={editingItemId}
         setItems={setItems}
         setEditingItemId={setEditingItemId}
+        isEditMode={isEditMode} // ✅ Pass it to ItemForm
       />
 
       <ItemTable

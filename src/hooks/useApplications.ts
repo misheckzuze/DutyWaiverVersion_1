@@ -24,6 +24,22 @@ export default function useApplication() {
         }
     };
 
+    const updateApplication = async (id: number, applicationData: ApplicationProps) => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const response = await axios.put(`/api/v1/applications/${id}`, applicationData);
+            setData(response.data.data);
+            return response.data.data;
+        } catch (error: any) {
+            setError(error.response?.data?.message || error.message || 'Failed to update application');
+            throw error;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const submitApplication = async (applicationId: number) => {
         setIsLoading(true);
         setError(null);
@@ -61,6 +77,21 @@ export default function useApplication() {
         }
     };
 
+    const getApplicationById = async (id: string) => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const response = await axios.get(`/api/v1/applications/${id}`);
+            return response.data.data;
+        } catch (error: any) {
+            setError(error.response?.data?.message || error.message || 'Failed to fetch application');
+            throw error;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const clearApplication = () => {
         setData(null);
         setError(null);
@@ -72,8 +103,10 @@ export default function useApplication() {
         error,
         isLoading,
         createDraft,
+        updateApplication, // <--- added here
         submitApplication,
         getApplicationsByTIN,
+        getApplicationById,
         clearApplication
     };
 }
