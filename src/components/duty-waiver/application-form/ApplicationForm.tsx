@@ -132,8 +132,61 @@ export default function ApplicationForm() {
       startDate: projectDetails.startDate?.toISOString().split('T')[0] || "",
       endDate: projectDetails.endDate?.toISOString().split('T')[0] || "",
       attachments: attachments.map(att => ({
-        documentType: att.type,
-        filePath: att.file?.name || ""
+        type: att.type,
+        file: att.file?.name || ""
+      })),
+      items: items.map(item => ({
+        description: item.description,
+        hscode: item.hsCode,
+        quantity: item.quantity,
+        value: item.value,
+        currency: "MWK",
+        dutyAmount: 200,
+        uomId: 1
+      })),
+      submissionDate: new Date().toISOString(),
+      status: "Under Review",
+      userId: userData.userId,
+      tin: userData.tin,
+      applicationTypeId: 1
+    };
+
+    console.log("Final form data being submitted:", fullFormData); // Debug log
+  
+    try {
+      await createDraft(fullFormData);
+      router.push("/my-applications");
+      alert("Draft saved successfully!");
+    } catch (error) {
+      console.error("Error saving draft:", error);
+    }
+  };
+
+  const handleDraft = async (e: React.MouseEvent) => {
+    e.preventDefault();
+  
+    console.log("Submitting form with userData:", userData); // Debug log
+    
+    if (!userData.userId || !userData.tin) {
+      console.error("Missing user data - userId:", userData.userId, "tin:", userData.tin);
+      alert("User information is missing. Please ensure you're logged in.");
+      return;
+    }
+
+    const fullFormData: ApplicationProps = {
+      ...formData,
+      projectName: projectDetails.projectName,
+      projectDescription: projectDetails.projectDescription,
+      projectDistrict: projectDetails.projectDistrict,
+      projectPhysicalAddress: projectDetails.projectPhysicalAddress,
+      reasonForApplying: projectDetails.reasonForApplying,
+      projectValue: parseFloat(projectDetails.projectValue),
+      currency: "MWK",
+      startDate: projectDetails.startDate?.toISOString().split('T')[0] || "",
+      endDate: projectDetails.endDate?.toISOString().split('T')[0] || "",
+      attachments: attachments.map(att => ({
+        type: att.type,
+        file: att.file?.name || ""
       })),
       items: items.map(item => ({
         description: item.description,
@@ -215,11 +268,19 @@ export default function ApplicationForm() {
           ) : (
             <div>
               <button
+                onClick={handleDraft}
+                disabled={isLoading}
+                className="ml-auto mr-8 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                {isLoading ? 'Saving...' : 'Save Draft'}
+              </button>
+
+              <button
                 onClick={handleSubmit}
                 disabled={isLoading}
                 className="ml-auto px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
               >
-                {isLoading ? 'Saving...' : 'Save Draft'}
+                {isLoading ? 'Submitting...' : 'Submit Changes'}
               </button>
               {error && <div className="error-message">{error}</div>}
             </div>

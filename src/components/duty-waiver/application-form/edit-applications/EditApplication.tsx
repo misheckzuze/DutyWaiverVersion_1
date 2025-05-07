@@ -37,10 +37,12 @@ export default function EditApplicationForm({ id }: EditApplicationFormProps) {
   const [items, setItems] = useState<Item[]>([]);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [showDraftConfirmDialog, setDraftShowConfirmDialog] = useState(false);
+  const [showSubmitConfirmDialog, setSubmitShowConfirmDialog] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
 
-  const { getApplicationById, updateApplication, error } = useApplication(); 
+  const { getApplicationById, updateApplication, error } = useApplication();
 
   useEffect(() => {
     const fetchApplication = async () => {
@@ -86,11 +88,11 @@ export default function EditApplicationForm({ id }: EditApplicationFormProps) {
     }));
   };
 
-  const handleSubmit = async () => {
+  const handleDraft = async () => {
     setIsSubmitting(true);
     try {
       const authData = JSON.parse(localStorage.getItem('authData') || '{}');
-      
+
 
       const payload: ApplicationProps = {
         userId: authData?.id || 0,
@@ -130,6 +132,52 @@ export default function EditApplicationForm({ id }: EditApplicationFormProps) {
       setIsSubmitting(false);
     }
   };
+
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    try {
+      const authData = JSON.parse(localStorage.getItem('authData') || '{}');
+
+
+      const payload: ApplicationProps = {
+        userId: authData?.id || 0,
+        tin: authData?.companyTIN || '',
+        submissionDate: new Date().toISOString(),
+        applicationTypeId: parseInt(projectDetails.projectType) || 1,
+        status: "Under Review",
+        projectName: projectDetails.projectName,
+        projectDescription: projectDetails.projectDescription,
+        projectDistrict: projectDetails.projectDistrict,
+        projectPhysicalAddress: projectDetails.projectPhysicalAddress,
+        reasonForApplying: projectDetails.reasonForApplying,
+        projectValue: parseFloat(projectDetails.projectValue) || 0,
+        currency: "MWK",
+        startDate: projectDetails.startDate?.toISOString().split('T')[0] || "",
+        endDate: projectDetails.endDate?.toISOString().split('T')[0] || "",
+        attachments: attachments.map(att => ({
+          type: att.type,
+          file: att.file?.name || att.file?.toString() || ""
+        })),
+        items: items.map(item => ({
+          description: item.description,
+          hscode: item.hsCode,
+          quantity: item.quantity,
+          value: item.value,
+          currency: "MWK",
+          dutyAmount: 200,
+          uomId: 1
+        }))
+      };
+
+      await updateApplication(parseInt(id), payload);
+      router.push('/my-applications');
+    } catch (err) {
+      console.error('Failed to update application:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
 
   return (
     <div className="mx-auto">
@@ -192,25 +240,44 @@ export default function EditApplicationForm({ id }: EditApplicationFormProps) {
                   Continue
                 </Button>
               ) : (
-                <Button
-                  onClick={() => setShowConfirmDialog(true)}
-                  className="ml-auto bg-green-600 hover:bg-green-700 text-white"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? 'Submitting...' : 'Submit Changes'}
-                </Button>
+                <div>
+                  <Button
+                    onClick={() => setDraftShowConfirmDialog(true)}
+                    className="ml-auto mr-8 bg-blue-600 hover:bg-blue-700 text-white"
+                    disabled={isSaving}
+                  >
+                    {isSaving ? 'Saving...' : 'Save Draft'}
+                  </Button>
+                  <Button
+                    onClick={() => setSubmitShowConfirmDialog(true)}
+                    className="ml-auto bg-green-600 hover:bg-green-700 text-white"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? 'Submitting...' : 'Submit Changes'}
+                  </Button>
+                </div>
               )}
             </div>
           </>
         )}
 
         <ConfirmationDialog
-          isOpen={showConfirmDialog}
+          isOpen={showDraftConfirmDialog}
           title="Confirm Changes"
           message="Are you sure you want to update this application?"
-          confirmText="Update Application"
+          confirmText="Update Draft Application"
+          onConfirm={handleDraft}
+          onCancel={() => setDraftShowConfirmDialog(false)}
+          isSubmitting={isSaving}
+        />
+
+        <ConfirmationDialog
+          isOpen={showSubmitConfirmDialog}
+          title="Confirm Changes"
+          message="Are you sure you want to submit this application?"
+          confirmText="Submit Application"
           onConfirm={handleSubmit}
-          onCancel={() => setShowConfirmDialog(false)}
+          onCancel={() => setSubmitShowConfirmDialog(false)}
           isSubmitting={isSubmitting}
         />
 

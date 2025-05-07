@@ -18,7 +18,7 @@ export interface ApplicationProps {
     tin: string;
     submissionDate: string;
     applicationTypeId: number;
-    status: "Draft" | "Submitted" | "Approved" | "Rejected";
+    status: "Draft" | "Under Review" | "Submitted" | "Approved" | "Rejected" ;
     projectName: string;
     projectDescription: string;
     projectDistrict: string;
