@@ -8,6 +8,7 @@ import Select from '@/components/ui-utils/Select';
 import { ChevronDownIcon } from '@/icons';
 import DatePicker from '@/components/ui-utils/date-picker';
 import TextArea from '@/components/ui-utils/input/TextArea';
+import useApplication from '@/hooks/useApplications';
 
 interface ProjectDetailsStepProps {
   details: ProjectDetails;

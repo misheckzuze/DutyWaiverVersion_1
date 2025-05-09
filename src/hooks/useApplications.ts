@@ -97,16 +97,32 @@ export default function useApplication() {
         setError(null);
     };
 
+    const getApplicationTypes = async () => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const response = await axios.get(`/api/v1/applicationstypes`);
+            return response.data.data;
+        } catch (error: any) {
+            setError(error.response?.data?.message || error.message || 'Failed to fetch application');
+            throw error;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return {
         application: data,
         applications,
         error,
         isLoading,
         createDraft,
-        updateApplication, // <--- added here
+        updateApplication,
         submitApplication,
         getApplicationsByTIN,
         getApplicationById,
-        clearApplication
+        clearApplication,
+        getApplicationTypes
     };
 }
