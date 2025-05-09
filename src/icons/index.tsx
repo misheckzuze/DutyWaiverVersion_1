@@ -51,9 +51,11 @@ import HorizontaLDots from "./horizontal-dots.svg";
 import ChatIcon from "./chat.svg";
 import MoreDotIcon from "./more-dot.svg";
 import BellIcon from "./bell.svg";
+
 import ChevronRightIcon from './chevron-right.svg';
 import ClockIcon from './clock.svg';
-import XCircleIcon from './xcircle.svg';
+import XCircleIcon from './x-circle.svg';
+import PencilSquareIcon from './pencil-square.svg';
 
 export {
   DownloadIcon,
@@ -112,4 +114,5 @@ export {
   ChevronRightIcon,
   ClockIcon,
   XCircleIcon,
+  PencilSquareIcon,
 };

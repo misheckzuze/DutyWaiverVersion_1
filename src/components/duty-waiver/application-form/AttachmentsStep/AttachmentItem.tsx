@@ -1,7 +1,7 @@
 "use client";
 import React from 'react';
 import { Attachment } from '@/types/AttachmentModel';
-import { EyeCloseIcon } from '@/icons';
+import { TrashBinIcon } from '@/icons';
 import Button from '@/components/ui/button/Button';
 import { attachmentTypeOptions } from '@/utils/constants';
 
@@ -48,9 +48,9 @@ export const AttachmentItem: React.FC<AttachmentItemProps> = ({
           </label>
           <Button
             onClick={() => onRemove(attachment.id)}
-            className="text-red-600 hover:text-red-800"
+            className="p-1.5 bg-red-50 !text-red-600 rounded-md hover:bg-red-100 transition-colors"
           >
-            <EyeCloseIcon className="w-4 h-4" />
+            <TrashBinIcon className="w-4 h-4" />
           </Button>
         </div>
       </div>

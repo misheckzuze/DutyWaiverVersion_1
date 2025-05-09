@@ -22,7 +22,8 @@ import {
   ArrowDownIcon,
   ClockIcon,
   CheckCircleIcon,
-  XCircleIcon
+  XCircleIcon,
+  PencilSquareIcon
 } from '@/icons';
 import { Application } from '@/types/ApplicationModel';
 
@@ -158,7 +159,7 @@ export const ApplicationsTable: React.FC<ApplicationsTableProps> = ({
                     className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-full transition-colors"
                     title="Edit"
                   >
-                    <PencilIcon className="w-4 h-4" />
+                    <PencilSquareIcon className="w-4 h-4" />
                   </button>
                   
                   <button

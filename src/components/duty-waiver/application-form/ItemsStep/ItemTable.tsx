@@ -12,7 +12,7 @@ import {
   ColumnFiltersState,
   SortingState,
 } from '@tanstack/react-table';
-import { EyeCloseIcon, ChevronLeftIcon, ArrowUpIcon, ArrowDownIcon } from '@/icons';
+import { EyeCloseIcon,TrashBinIcon, ChevronLeftIcon, ChevronRightIcon, ArrowUpIcon, ArrowDownIcon } from '@/icons';
 
 interface Item {
   id: string;
@@ -37,23 +37,23 @@ const ItemTable = ({ items, editItem, deleteItem, calculateTotalValue }: Props) 
 
   const columns = useMemo<ColumnDef<Item>[]>(
     () => [
-      { 
-        accessorKey: 'hsCode', 
+      {
+        accessorKey: 'hsCode',
         header: 'HS Code',
         cell: info => <span className="font-medium">{info.getValue() as string}</span>
       },
-      { 
-        accessorKey: 'description', 
+      {
+        accessorKey: 'description',
         header: 'Description',
         cell: info => <span className="text-gray-700">{info.getValue() as string}</span>
       },
-      { 
-        accessorKey: 'quantity', 
+      {
+        accessorKey: 'quantity',
         header: 'Quantity',
         cell: info => <span className="text-left block">{info.getValue() as number}</span>
       },
-      { 
-        accessorKey: 'unitOfMeasure', 
+      {
+        accessorKey: 'unitOfMeasure',
         header: 'Unit',
         cell: info => <span className="text-gray-500 uppercase">{info.getValue() as string}</span>
       },
@@ -83,7 +83,7 @@ const ItemTable = ({ items, editItem, deleteItem, calculateTotalValue }: Props) 
               onClick={() => deleteItem(row.original.id)}
               className="p-1.5 bg-red-50 text-red-600 rounded-md hover:bg-red-100 transition-colors"
             >
-              <EyeCloseIcon className="w-4 h-4" />
+              <TrashBinIcon className="w-4 h-4" />
             </button>
           </div>
         ),
@@ -125,7 +125,7 @@ const ItemTable = ({ items, editItem, deleteItem, calculateTotalValue }: Props) 
             onChange={(e) => setGlobalFilter(e.target.value)}
           />
         </div>
-        
+
         <div className="flex items-center gap-2">
           <select
             className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
@@ -199,7 +199,7 @@ const ItemTable = ({ items, editItem, deleteItem, calculateTotalValue }: Props) 
           <span className="font-medium">{table.getPageCount()}</span>{' '}
           pages ({table.getFilteredRowModel().rows.length} items)
         </div>
-        
+
         <div className="flex items-center gap-2">
           <button
             onClick={() => table.previousPage()}
@@ -208,17 +208,17 @@ const ItemTable = ({ items, editItem, deleteItem, calculateTotalValue }: Props) 
           >
             <ChevronLeftIcon className="h-4 w-4" />
           </button>
-          
+
           {Array.from({ length: Math.min(5, table.getPageCount()) }).map((_, i) => {
-            const pageIndex = table.getPageCount() <= 5 
-              ? i 
+            const pageIndex = table.getPageCount() <= 5
+              ? i
               : Math.min(
-                  Math.max(0, table.getPageCount() - 5), 
-                  Math.max(0, table.getState().pagination.pageIndex - 2)
-                ) + i;
-            
+                Math.max(0, table.getPageCount() - 5),
+                Math.max(0, table.getState().pagination.pageIndex - 2)
+              ) + i;
+
             if (pageIndex >= table.getPageCount()) return null;
-            
+
             return (
               <button
                 key={pageIndex}
@@ -229,16 +229,17 @@ const ItemTable = ({ items, editItem, deleteItem, calculateTotalValue }: Props) 
               </button>
             );
           })}
-          
+
           <button
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
             className={`p-2 rounded-md ${!table.getCanNextPage() ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-100'}`}
           >
-            <EyeCloseIcon className="h-4 w-4" />
+            <ChevronRightIcon className="h-4 w-4" />
           </button>
         </div>
-        
+
+
         <div className="text-sm font-semibold text-gray-700">
           Total Value: {calculateTotalValue().toLocaleString()} MWK
         </div>

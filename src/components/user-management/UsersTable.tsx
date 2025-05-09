@@ -12,7 +12,7 @@ import {
   SortingState,
 } from '@tanstack/react-table';
 import { User } from '@/types/UserModel';
-import { ArrowUpIcon, ArrowDownIcon, ArrowRightIcon, EyeIcon } from '@/icons';
+import { ArrowUpIcon, ArrowDownIcon, ChevronLeftIcon, ChevronRightIcon, EyeIcon } from '@/icons';
 
 interface Props {
   users: User[];
@@ -168,47 +168,56 @@ export const UsersTable = ({ users, onEdit, onToggleActive }: Props) => {
       </div>
 
       {/* Pagination */}
-      <div className="px-6 py-4 border-t border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4">
-        <div className="text-sm text-gray-500">
-          Showing{' '}
-          <span className="font-medium">{table.getState().pagination.pageIndex + 1}</span>{' '}
-          of{' '}
-          <span className="font-medium">{table.getPageCount()}</span>{' '}
-          pages ({table.getFilteredRowModel().rows.length} users)
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-            className={`p-2 rounded-md ${!table.getCanPreviousPage() ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-100'}`}
-          >
-            <ArrowRightIcon className="h-4 w-4" />
-          </button>
-
-          {Array.from({ length: Math.min(5, table.getPageCount()) }).map((_, i) => {
-            const pageIndex = Math.min(Math.max(0, table.getState().pagination.pageIndex - 2), table.getPageCount() - 5) + i;
-            if (pageIndex >= table.getPageCount()) return null;
-            return (
-              <button
-                key={pageIndex}
-                onClick={() => table.setPageIndex(pageIndex)}
-                className={`w-8 h-8 rounded-md text-sm ${table.getState().pagination.pageIndex === pageIndex ? 'bg-blue-500 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
-              >
-                {pageIndex + 1}
-              </button>
-            );
-          })}
-
-          <button
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-            className={`p-2 rounded-md ${!table.getCanNextPage() ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-100'}`}
-          >
-            <ArrowRightIcon className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
+       <div className="px-6 py-4 border-t border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+              <div className="text-sm text-gray-500">
+                Showing{' '}
+                <span className="font-medium">{table.getState().pagination.pageIndex + 1}</span>{' '}
+                of{' '}
+                <span className="font-medium">{table.getPageCount()}</span>{' '}
+                pages ({table.getFilteredRowModel().rows.length} users)
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => table.previousPage()}
+                  disabled={!table.getCanPreviousPage()}
+                  className={`p-2 rounded-md ${!table.getCanPreviousPage() ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-100'}`}
+                >
+                  <ChevronLeftIcon className="h-4 w-4" />
+                </button>
+                
+                {Array.from({ length: Math.min(5, table.getPageCount()) }).map((_, i) => {
+                  const pageIndex = table.getPageCount() <= 5 
+                    ? i 
+                    : Math.min(
+                        Math.max(0, table.getPageCount() - 5), 
+                        Math.max(0, table.getState().pagination.pageIndex - 2)
+                      ) + i;
+                  
+                  if (pageIndex >= table.getPageCount()) return null;
+                  
+                  return (
+                    <button
+                      key={pageIndex}
+                      onClick={() => table.setPageIndex(pageIndex)}
+                      className={`w-8 h-8 rounded-md text-sm ${table.getState().pagination.pageIndex === pageIndex ? 'bg-blue-500 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+                    >
+                      {pageIndex + 1}
+                    </button>
+                  );
+                })}
+                
+                <button
+                  onClick={() => table.nextPage()}
+                  disabled={!table.getCanNextPage()}
+                  className={`p-2 rounded-md ${!table.getCanNextPage() ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-100'}`}
+                >
+                  <ChevronRightIcon className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+      {/* End of Pagination */}
+      
     </div>
   );
 };
