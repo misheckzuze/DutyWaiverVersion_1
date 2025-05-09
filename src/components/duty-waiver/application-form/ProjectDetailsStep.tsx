@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { ProjectDetails } from '@/types/ProjectDetailsModel';
-import { projectTypeOptions, districtOptions } from '@/utils/constants';
+import { districtOptions } from '@/utils/constants';
 import Label from '@/components/ui-utils/Label';
 import Input from '@/components/ui-utils/input/InputField';
 import Select from '@/components/ui-utils/Select';
@@ -24,9 +24,30 @@ export const ProjectDetailsStep: React.FC<ProjectDetailsStepProps> = ({
   errors = {}
 }) => {
   const [localDetails, setLocalDetails] = useState<ProjectDetails>(details);
+  const [projectTypeOptions, setProjectTypeOptions] = useState<{value: string, label: string}[]>([]);
+  const { getApplicationTypes } = useApplication();
 
   useEffect(() => {
     setLocalDetails(details);
+
+      // Fetch project types when component mounts
+      const fetchProjectTypes = async () => {
+        try {
+          const types = await getApplicationTypes();
+          // Transform API data to match Select component's expected format
+          const options = types.map((type: any) => ({
+            value: type.name.toLowerCase(),
+            label: type.name
+          }));
+          setProjectTypeOptions(options);
+        } catch (error) {
+          console.error('Failed to fetch project types:', error);
+          // Optionally set default options or handle error
+        }
+      };
+      
+      fetchProjectTypes();
+
   }, [details]);
 
   const handleInputChange = (field: keyof ProjectDetails) => (e: React.ChangeEvent<HTMLInputElement>) => {
