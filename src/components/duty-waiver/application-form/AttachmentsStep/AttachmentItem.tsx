@@ -1,9 +1,10 @@
 "use client";
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Attachment } from '@/types/AttachmentModel';
 import { TrashBinIcon } from '@/icons';
 import Button from '@/components/ui/button/Button';
-import { attachmentTypeOptions } from '@/utils/constants';
+import useApplication from '@/hooks/useApplications';
+// import { attachmentTypeOptions } from '@/utils/constants';
 
 interface AttachmentItemProps {
   attachment: Attachment;
@@ -11,15 +12,36 @@ interface AttachmentItemProps {
   onRemove: (id: string) => void;
 }
 
-export const AttachmentItem: React.FC<AttachmentItemProps> = ({ 
-  attachment, 
-  onFileChange, 
-  onRemove 
+export const AttachmentItem: React.FC<AttachmentItemProps> = ({
+  attachment,
+  onFileChange,
+  onRemove
 }) => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files ? e.target.files[0] : null;
     onFileChange(attachment.id, file);
   };
+
+  const [attachmentTypeOptions, setAttachmentTypeOptions] = useState<{ value: string, label: string }[]>([]);
+  const { getAttachmentTypes } = useApplication();
+
+  useEffect(() => {
+
+    const fetchAttachmentTypes = async () => {
+      try {
+        const attachmentTypeOptions = await getAttachmentTypes();
+        const options = attachmentTypeOptions.map((type: any) => ({
+          value: type.id,
+          label: type.name
+        }));
+        setAttachmentTypeOptions(options);
+      } catch (error) {
+        console.error('Failed to fetch project types:', error);
+      }
+    };
+
+    fetchAttachmentTypes();
+  }, []);
 
   const attachmentTypeOption = attachmentTypeOptions.find(opt => opt.value === attachment.type);
   const attachmementTypeLabel = attachmentTypeOption ? attachmentTypeOption.label : attachment.type;

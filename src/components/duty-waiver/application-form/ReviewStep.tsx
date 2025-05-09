@@ -1,10 +1,10 @@
-"use client";
-import React, { useState } from 'react';
-// import { ProjectDetails, Item, Attachment } from './types';
+'use client';
+import React, { useEffect, useState } from 'react';
 import { ProjectDetails } from '@/types/ProjectDetailsModel';
 import { Item } from '@/types/ItemModel';
 import { Attachment } from '@/types/AttachmentModel';
-import { projectTypeOptions, attachmentTypeOptions } from '@/utils/constants';
+// import { attachmentTypeOptions } from '@/utils/constants';
+import useApplication from '@/hooks/useApplications';
 import { EyeCloseIcon } from '../../../icons';
 import Label from '@/components/ui-utils/Label';
 
@@ -21,9 +21,49 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
 }) => {
   const calculateTotalValue = () => items.reduce((sum, item) => sum + (item.value || 0), 0);
 
+    const [attachmentTypeOptions, setAttachmentTypeOptions] = useState<{ value: string, label: string }[]>([]);
+    const { getAttachmentTypes } = useApplication();
+  
+    useEffect(() => {
+  
+      const fetchAttachmentTypes = async () => {
+        try {
+          const attachmentTypeOptions = await getAttachmentTypes();
+          const options = attachmentTypeOptions.map((type: any) => ({
+            value: type.id,
+            label: type.name
+          }));
+          setAttachmentTypeOptions(options);
+        } catch (error) {
+          console.error('Failed to fetch project types:', error);
+        }
+      };
+  
+      fetchAttachmentTypes();
+    }, []);
+
   const getAttachmentTypeLabel = (value: string) => {
     const option = attachmentTypeOptions.find(opt => opt.value === value);
     return option ? option.label : value;
+  };
+
+  const formatDate = (date: Date | null) => {
+    if (!date) return <span className="text-gray-400">Not provided</span>;
+    return new Date(date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const getProjectTypeLabel = (value: string) => {
+    if (!value) return <span className="text-gray-400">Not provided</span>;
+    return value;
+  };
+
+  const getDistrictLabel = (value: string) => {
+    if (!value) return <span className="text-gray-400">Not provided</span>;
+    return value;
   };
 
   return (
@@ -40,37 +80,54 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
             </div>
             <div>
               <Label>Project Type</Label>
-              <p>{projectDetails.projectType ? projectTypeOptions.find(opt => opt.value === projectDetails.projectType)?.label : <span className="text-gray-400">Not provided</span>}</p>
+              <p>{getProjectTypeLabel(projectDetails.projectType)}</p>
             </div>
             <div>
+              <Label>Project Description</Label>
+              <p className="whitespace-pre-line">{projectDetails.projectDescription || <span className="text-gray-400">Not provided</span>}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div>
               <Label>Project District</Label>
-              <p>{projectDetails.projectDistrict || <span className="text-gray-400">Not provided</span>}</p>
+              <p>{getDistrictLabel(projectDetails.projectDistrict)}</p>
             </div>
             <div>
               <Label>Physical Address</Label>
               <p>{projectDetails.projectPhysicalAddress || <span className="text-gray-400">Not provided</span>}</p>
             </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
             <div>
-              <Label>Project Value</Label>
+              <Label>Project Estimation Value</Label>
               <p>{projectDetails.projectValue ? `${projectDetails.projectValue} MWK` : <span className="text-gray-400">Not provided</span>}</p>
             </div>
-            <div>
-              <Label>Project Duration</Label>
-              <p>{projectDetails.projectDuration || <span className="text-gray-400">Not provided</span>}</p>
-            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
             <div>
               <Label>Start Date</Label>
-              <p>{projectDetails.startDate ? projectDetails.startDate.toLocaleDateString() : <span className="text-gray-400">Not provided</span>}</p>
+              <p>{formatDate(projectDetails.startDate)}</p>
             </div>
             <div>
               <Label>End Date</Label>
-              <p>{projectDetails.endDate ? projectDetails.endDate.toLocaleDateString() : <span className="text-gray-400">Not provided</span>}</p>
+              <p>{formatDate(projectDetails.endDate)}</p>
             </div>
           </div>
-          <div className="mt-4">
-            <Label>Project Description</Label>
-            <p className="whitespace-pre-line">{projectDetails.projectDescription || <span className="text-gray-400">Not provided</span>}</p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div>
+              <Label>Project Duration (Years)</Label>
+              <p>{projectDetails.projectDurationYears || <span className="text-gray-400">Not provided</span>}</p>
+            </div>
+            <div>
+              <Label>Project Duration (Months)</Label>
+              <p>{projectDetails.projectDurationMonths || <span className="text-gray-400">Not provided</span>}</p>
+            </div>
           </div>
+
           <div className="mt-4">
             <Label>Reason for Applying</Label>
             <p className="whitespace-pre-line">{projectDetails.reasonForApplying || <span className="text-gray-400">Not provided</span>}</p>
@@ -98,7 +155,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
                       <td className="px-6 py-4 whitespace-nowrap">{item.description}</td>
                       <td className="px-6 py-4 whitespace-nowrap">{item.quantity}</td>
                       <td className="px-6 py-4 whitespace-nowrap">{item.unitOfMeasure}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">{item.value.toLocaleString()}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">{item.value?.toLocaleString() || 0}</td>
                     </tr>
                   ))}
                 </tbody>

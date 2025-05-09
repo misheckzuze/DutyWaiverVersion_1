@@ -23,7 +23,9 @@ export default function ApplicationForm() {
     projectPhysicalAddress: "",
     reasonForApplying: "",
     projectValue: "",
-    projectDuration: "",
+    // projectDuration: "",
+    projectDurationYears: "",
+    projectDurationMonths: "",
     startDate: null,
     endDate: null
   });
