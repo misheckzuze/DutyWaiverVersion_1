@@ -1,19 +1,20 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Item } from '@/types/ItemModel';
-import { unitOfMeasureOptions } from '@/utils/constants';
+// import { unitOfMeasureOptions } from '@/utils/constants';
 import Label from '@/components/ui-utils/Label';
 import Input from '@/components/ui-utils/input/InputField';
 import Select from '@/components/ui-utils/Select';
 import { ChevronDownIcon } from '@/icons';
 import Button from '@/components/ui/button/Button';
+import useApplication from '@/hooks/useApplications';
 
 interface ItemFormProps {
   items: Item[];
   editingItemId: string | null;
   setItems: React.Dispatch<React.SetStateAction<Item[]>>;
   setEditingItemId: React.Dispatch<React.SetStateAction<string | null>>;
-  isEditMode?: boolean; // ✅ added
+  isEditMode?: boolean;
 }
 
 export const ItemForm: React.FC<ItemFormProps> = ({
@@ -21,7 +22,7 @@ export const ItemForm: React.FC<ItemFormProps> = ({
   editingItemId,
   setItems,
   setEditingItemId,
-  isEditMode = false, // default is false
+  isEditMode = false,
 }) => {
   const [newItem, setNewItem] = useState<Omit<Item, 'id'>>({
     hsCode: '',
@@ -30,8 +31,52 @@ export const ItemForm: React.FC<ItemFormProps> = ({
     unitOfMeasure: '',
     value: 0,
   });
-
+  const [unitOfMeasureOptions, setUnitOfMeasureOptions] = useState<{ value: string, label: string }[]>([]);
+  const { getUnitOfMeasure } = useApplication();
   const currentItem = editingItemId ? items.find(item => item.id === editingItemId) : null;
+
+
+  useEffect(() => {
+
+      const fetchUnitOfMeasures = async () => {
+        try {
+          const unitOfMeasures = await getUnitOfMeasure();
+          const options = unitOfMeasures.map((type: any) => ({
+            value: type.code,
+            label: type.description
+          }));
+          setUnitOfMeasureOptions(options);
+        } catch (error) {
+          console.error('Failed to fetch project types:', error);
+        }
+      };
+  
+      fetchUnitOfMeasures();
+    }, []);
+
+  // Helper function to format number with commas
+  const formatNumberWithCommas = (num: string | number): string => {
+    const numStr = num.toString().replace(/\D/g, '');
+    if (!numStr) return '';
+    return parseInt(numStr).toLocaleString();
+  };
+
+  // Helper function to parse formatted number back to raw number
+  const parseFormattedNumber = (formattedValue: string): number => {
+    return parseInt(formattedValue.replace(/,/g, '')) || 0;
+  };
+
+  const handleValueChange = (e: React.ChangeEvent<HTMLInputElement>, isEditing: boolean) => {
+    const rawValue = parseFormattedNumber(e.target.value);
+    if (isEditing) {
+      setItems(items.map(i => 
+        i.id === editingItemId ? { ...i, value: rawValue } : i
+      ));
+    } else {
+      setNewItem({ ...newItem, value: rawValue });
+    }
+
+  };
 
   const handleSave = () => {
     if (editingItemId) {
@@ -72,7 +117,6 @@ export const ItemForm: React.FC<ItemFormProps> = ({
               : setNewItem({ ...newItem, hsCode: e.target.value })}
             placeholder="HS Code"
             className="w-full"
-            // disabled={isEditMode && !editingItemId} // ✅ Disable input if editMode but not editing a specific item
           />
         </div>
 
@@ -89,7 +133,6 @@ export const ItemForm: React.FC<ItemFormProps> = ({
               : setNewItem({ ...newItem, description: e.target.value })}
             placeholder="Item description"
             className="w-full"
-            // disabled={isEditMode && !editingItemId}
           />
         </div>
 
@@ -107,7 +150,6 @@ export const ItemForm: React.FC<ItemFormProps> = ({
                 ? setItems(items.map(i => i.id === editingItemId ? { ...i, unitOfMeasure: value } : i))
                 : setNewItem({ ...newItem, unitOfMeasure: value })}
               className="w-full dark:bg-dark-900"
-              // disabled={isEditMode && !editingItemId}
             />
             <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
           </div>
@@ -126,7 +168,6 @@ export const ItemForm: React.FC<ItemFormProps> = ({
               : setNewItem({ ...newItem, quantity: parseInt(e.target.value) || 0 })}
             placeholder="Qty"
             className="w-full"
-            // disabled={isEditMode && !editingItemId}
           />
         </div>
 
@@ -134,16 +175,14 @@ export const ItemForm: React.FC<ItemFormProps> = ({
         <div className="md:col-span-2">
           <Label>Value (MWK)*</Label>
           <Input
-            type="number"
+            type="text" // Changed from number to text to allow commas
             value={editingItemId
-              ? items.find(i => i.id === editingItemId)?.value || 0
-              : newItem.value || ''}
-            onChange={(e) => editingItemId
-              ? setItems(items.map(i => i.id === editingItemId ? { ...i, value: parseFloat(e.target.value) || 0 } : i))
-              : setNewItem({ ...newItem, value: parseFloat(e.target.value) || 0 })}
+              ? formatNumberWithCommas(items.find(i => i.id === editingItemId)?.value || 0)
+              : formatNumberWithCommas(newItem.value)}
+            onChange={(e) => handleValueChange(e, !!editingItemId)}
             placeholder="Value"
             className="w-full"
-            // disabled={isEditMode && !editingItemId}
+            formatNumber={true} // Enable comma formatting
           />
         </div>
       </div>
@@ -167,13 +206,13 @@ export const ItemForm: React.FC<ItemFormProps> = ({
             Cancel
           </Button>
         )}
-          <Button
-            onClick={handleSave}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-            disabled={!isFormValid}
-          >
-            {editingItemId ? 'Update Item' : 'Add Item'}
-          </Button>
+        <Button
+          onClick={handleSave}
+          className="bg-blue-600 hover:bg-blue-700 text-white"
+          disabled={!isFormValid}
+        >
+          {editingItemId ? 'Update Item' : 'Add Item'}
+        </Button>
       </div>
     </div>
   );

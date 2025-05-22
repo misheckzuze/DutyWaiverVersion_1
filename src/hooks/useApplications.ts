@@ -102,10 +102,55 @@ export default function useApplication() {
         setError(null);
 
         try {
-            const response = await axios.get(`/api/v1/applicationstypes`);
+            const response = await axios.get(`/api/v1/applicationtypes`);
             return response.data.data;
         } catch (error: any) {
-            setError(error.response?.data?.message || error.message || 'Failed to fetch application');
+            setError(error.response?.data?.message || error.message || 'Failed to fetch application types');
+            throw error;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const getDistricts = async () => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const response = await axios.get(`/api/v1/districts`);
+            return response.data.data;
+        } catch (error: any) {
+            setError(error.response?.data?.message || error.message || 'Failed to fetch districts');
+            throw error;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const getUnitOfMeasure = async () => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const response = await axios.get(`/api/v1/unitofmeasure`);
+            return response.data.data;
+        } catch (error: any) {
+            setError(error.response?.data?.message || error.message || 'Failed to fetch districts');
+            throw error;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const getAttachmentTypes = async () => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const response = await axios.get(`/api/v1/attachmenttypes`);
+            return response.data.data;
+        } catch (error: any) {
+            setError(error.response?.data?.message || error.message || 'Failed to fetch districts');
             throw error;
         } finally {
             setIsLoading(false);
@@ -123,6 +168,9 @@ export default function useApplication() {
         getApplicationsByTIN,
         getApplicationById,
         clearApplication,
-        getApplicationTypes
+        getApplicationTypes,
+        getDistricts,
+        getUnitOfMeasure,
+        getAttachmentTypes,
     };
 }
