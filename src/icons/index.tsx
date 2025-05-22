@@ -56,6 +56,7 @@ import ChevronRightIcon from './chevron-right.svg';
 import ClockIcon from './clock.svg';
 import XCircleIcon from './x-circle.svg';
 import PencilSquareIcon from './pencil-square.svg';
+import DocumentIcon from './document.svg';
 
 export {
   DownloadIcon,
@@ -115,4 +116,5 @@ export {
   ClockIcon,
   XCircleIcon,
   PencilSquareIcon,
+  DocumentIcon,
 };

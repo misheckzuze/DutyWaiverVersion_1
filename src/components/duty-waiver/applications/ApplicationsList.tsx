@@ -29,7 +29,7 @@ const ApplicationsList = () => {
   };
 
   const handleView = (id: string) => {
-    // Handle view logic (optional to implement later)
+    router.push(`/view-application/${id}`);
   };
 
   return (
