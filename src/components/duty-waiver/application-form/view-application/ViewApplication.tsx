@@ -10,8 +10,12 @@ import Button from '@/components/ui/button/Button';
 import { ViewProjectDetails } from './ViewProjectDetails';
 import { ViewItems } from './ViewItems';
 import { ViewAttachments } from './ViewAttachments';
-import { ApplicationProps } from '@/types/Application';
+import { ApplicationProps, ApplicationSubmissionResponse } from '@/types/Application';
 import Loader from '@/components/ui-utils/Loader';
+import { ClockIcon, CheckCircleIcon, XCircleIcon } from '@/icons';
+import EnhancedConfirmationDialog from '@/components/ui-utils/EnhancedConfirmationDialog';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 interface ViewApplicationProps {
   id: string;
@@ -20,7 +24,7 @@ interface ViewApplicationProps {
 export default function ViewApplication({ id }: ViewApplicationProps) {
   const router = useRouter();
   const [isFetching, setIsFetching] = useState(true);
-  const [applicationData, setApplicationData] = useState<ApplicationProps | null>(null);
+  const [applicationData, setApplicationData] = useState<ApplicationSubmissionResponse | null>(null);
   const [projectDetails, setProjectDetails] = useState<ProjectDetails>({
     projectName: '',
     projectDescription: '',
@@ -29,12 +33,17 @@ export default function ViewApplication({ id }: ViewApplicationProps) {
     projectPhysicalAddress: '',
     reasonForApplying: '',
     projectValue: '',
-    projectDuration: '',
+    projectDurationYears: '',
+    projectDurationMonths: '',
     startDate: null,
     endDate: null,
   });
   const [items, setItems] = useState<Item[]>([]);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<() => void>(() => {});
+  const [confirmMessage, setConfirmMessage] = useState('');
+  const [confirmType, setConfirmType] = useState<'success' | 'warning' | 'danger' | 'info'>('warning');
 
   const { getApplicationById } = useApplication();
 
@@ -45,6 +54,20 @@ export default function ViewApplication({ id }: ViewApplicationProps) {
         const data = await getApplicationById(id);
         if (data) {
           setApplicationData(data);
+
+          // Parse duration string if available (e.g., "2 years 3 months")
+          let durationYears = '';
+          let durationMonths = '';
+
+          if (data.projectDuration) {
+            const durationStr = data.projectDuration.toString();
+            const yearsMatch = durationStr.match(/(\d+)\s*years?/i);
+            const monthsMatch = durationStr.match(/(\d+)\s*months?/i);
+
+            if (yearsMatch) durationYears = yearsMatch[1];
+            if (monthsMatch) durationMonths = monthsMatch[1];
+          }
+
           setProjectDetails({
             projectName: data.projectName,
             projectDescription: data.projectDescription,
@@ -53,15 +76,21 @@ export default function ViewApplication({ id }: ViewApplicationProps) {
             projectPhysicalAddress: data.projectPhysicalAddress,
             reasonForApplying: data.reasonForApplying,
             projectValue: data.projectValue?.toString() || '',
-            projectDuration: data.projectDuration?.toString() || '',
+            projectDurationYears: durationYears,
+            projectDurationMonths: durationMonths,
             startDate: data.startDate ? new Date(data.startDate) : null,
             endDate: data.endDate ? new Date(data.endDate) : null,
           });
+
           setItems(data.items || []);
           setAttachments(data.attachments || []);
+
+          // Show success toast
+          toast.success("Application details loaded successfully");
         }
       } catch (err) {
         console.error('Failed to load application:', err);
+        toast.error("Failed to load application details");
         router.push('/my-applications');
       } finally {
         setIsFetching(false);
@@ -81,15 +110,35 @@ export default function ViewApplication({ id }: ViewApplicationProps) {
     router.push(`/edit-application/${id}`);
   };
 
-  const getStatusBadgeClass = (status: string) => {
-    const statusMap: Record<string, string> = {
-      'Draft': 'bg-gray-100 text-gray-800',
-      'Under Review': 'bg-blue-100 text-blue-800',
-      'Submitted': 'bg-yellow-100 text-yellow-800',
-      'Approved': 'bg-green-100 text-green-800',
-      'Rejected': 'bg-red-100 text-red-800',
+  const getStatusDetails = (status: string) => {
+    const statusMap: Record<string, { class: string, icon: React.ReactNode, gradient: string }> = {
+      'Draft': {
+        class: 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 border border-gray-300',
+        icon: <ClockIcon className="w-4 h-4 mr-1" />,
+        gradient: 'from-gray-50 to-gray-100'
+      },
+      'Under Review': {
+        class: 'bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 border border-blue-300',
+        icon: <ClockIcon className="w-4 h-4 mr-1 text-blue-600" />,
+        gradient: 'from-blue-50 to-blue-100'
+      },
+      'Submitted': {
+        class: 'bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 border border-yellow-300',
+        icon: <ClockIcon className="w-4 h-4 mr-1 text-yellow-600" />,
+        gradient: 'from-yellow-50 to-yellow-100'
+      },
+      'Approved': {
+        class: 'bg-gradient-to-r from-green-100 to-green-200 text-green-800 border border-green-300',
+        icon: <CheckCircleIcon className="w-4 h-4 mr-1 text-green-600" />,
+        gradient: 'from-green-50 to-green-100'
+      },
+      'Rejected': {
+        class: 'bg-gradient-to-r from-red-100 to-red-200 text-red-800 border border-red-300',
+        icon: <XCircleIcon className="w-4 h-4 mr-1 text-red-600" />,
+        gradient: 'from-red-50 to-red-100'
+      },
     };
-    return statusMap[status] || 'bg-gray-100 text-gray-800';
+    return statusMap[status] || statusMap['Draft'];
   };
 
   return (
@@ -112,19 +161,22 @@ export default function ViewApplication({ id }: ViewApplicationProps) {
                       Reference: {applicationData.referenceNumber || 'N/A'}
                     </p>
                   </div>
-                  <div className={`px-4 py-2 rounded-full text-sm font-medium ${getStatusBadgeClass(applicationData.status)}`}>
-                    {applicationData.status}
-                  </div>
+                  {applicationData.status && (
+                    <div className={`flex items-center px-4 py-2 rounded-full text-sm font-medium shadow-sm ${getStatusDetails(applicationData.status).class}`}>
+                      {getStatusDetails(applicationData.status).icon}
+                      {applicationData.status}
+                    </div>
+                  )}
                 </div>
-                
+
                 <div className="border-t border-gray-200 pt-6">
                   <ViewProjectDetails details={projectDetails} />
                 </div>
-                
+
                 <div className="border-t border-gray-200 pt-6 mt-6">
                   <ViewItems items={items} />
                 </div>
-                
+
                 <div className="border-t border-gray-200 pt-6 mt-6">
                   <ViewAttachments attachments={attachments} />
                 </div>
@@ -139,10 +191,15 @@ export default function ViewApplication({ id }: ViewApplicationProps) {
               >
                 Back to Applications
               </Button>
-              
+
               {applicationData?.status === 'Draft' && (
                 <Button
-                  onClick={handleEdit}
+                  onClick={() => {
+                    setConfirmMessage("Are you sure you want to edit this application?");
+                    setConfirmType("info");
+                    setConfirmAction(() => handleEdit);
+                    setShowConfirmDialog(true);
+                  }}
                   variant="primary"
                   className="px-4 py-2"
                 >
@@ -150,6 +207,17 @@ export default function ViewApplication({ id }: ViewApplicationProps) {
                 </Button>
               )}
             </div>
+
+            <EnhancedConfirmationDialog
+              isOpen={showConfirmDialog}
+              message={confirmMessage}
+              onConfirm={() => {
+                confirmAction();
+                setShowConfirmDialog(false);
+              }}
+              onCancel={() => setShowConfirmDialog(false)}
+              type={confirmType}
+            />
           </>
         )}
       </ComponentCard>

@@ -12,13 +12,13 @@ import {
   ColumnFiltersState,
   SortingState,
 } from '@tanstack/react-table';
-import { 
-  EyeIcon, 
-  PencilIcon, 
-  TrashBinIcon, 
-  ChevronLeftIcon, 
+import {
+  EyeIcon,
+  PencilIcon,
+  TrashBinIcon,
+  ChevronLeftIcon,
   ChevronRightIcon,
-  ArrowUpIcon, 
+  ArrowUpIcon,
   ArrowDownIcon,
   ClockIcon,
   CheckCircleIcon,
@@ -37,20 +37,32 @@ import { Application } from '@/types/ApplicationModel';
 //   updatedAt: Date;
 // }
 
-const statusColors = {
-  draft: 'bg-gray-100 text-gray-800',
-  submitted: 'bg-blue-100 text-blue-800',
-  processing: 'bg-yellow-100 text-yellow-800',
-  approved: 'bg-green-100 text-green-800',
-  rejected: 'bg-red-100 text-red-800',
-};
-
-const statusIcons = {
-  draft: <ClockIcon className="w-4 h-4" />,
-  submitted: <ClockIcon className="w-4 h-4" />,
-  processing: <ClockIcon className="w-4 h-4" />,
-  approved: <CheckCircleIcon className="w-4 h-4" />,
-  rejected: <XCircleIcon className="w-4 h-4" />,
+const statusStyles = {
+  draft: {
+    class: 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 border border-gray-300',
+    icon: <ClockIcon className="w-4 h-4 text-gray-600" />,
+    gradient: 'from-gray-50 to-gray-100'
+  },
+  submitted: {
+    class: 'bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 border border-blue-300',
+    icon: <ClockIcon className="w-4 h-4 text-blue-600" />,
+    gradient: 'from-blue-50 to-blue-100'
+  },
+  processing: {
+    class: 'bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 border border-yellow-300',
+    icon: <ClockIcon className="w-4 h-4 text-yellow-600" />,
+    gradient: 'from-yellow-50 to-yellow-100'
+  },
+  approved: {
+    class: 'bg-gradient-to-r from-green-100 to-green-200 text-green-800 border border-green-300',
+    icon: <CheckCircleIcon className="w-4 h-4 text-green-600" />,
+    gradient: 'from-green-50 to-green-100'
+  },
+  rejected: {
+    class: 'bg-gradient-to-r from-red-100 to-red-200 text-red-800 border border-red-300',
+    icon: <XCircleIcon className="w-4 h-4 text-red-600" />,
+    gradient: 'from-red-50 to-red-100'
+  },
 };
 
 interface ApplicationsTableProps {
@@ -60,9 +72,9 @@ interface ApplicationsTableProps {
   onView: (id: string) => void;
 }
 
-export const ApplicationsTable: React.FC<ApplicationsTableProps> = ({ 
-  applications, 
-  onEdit, 
+export const ApplicationsTable: React.FC<ApplicationsTableProps> = ({
+  applications,
+  onEdit,
   onCancel,
   onView
 }) => {
@@ -77,7 +89,7 @@ export const ApplicationsTable: React.FC<ApplicationsTableProps> = ({
         header: 'Project Name',
         cell: ({ row }) => (
           <div className="flex items-center gap-3">
-            <button 
+            <button
               onClick={() => onView(row.original.id)}
               className="font-medium text-blue-600 hover:text-blue-800 hover:underline"
             >
@@ -108,10 +120,10 @@ export const ApplicationsTable: React.FC<ApplicationsTableProps> = ({
         accessorKey: 'status',
         header: 'Status',
         cell: ({ row }) => {
-          const status = row.getValue('status') as keyof typeof statusColors;
+          const status = row.getValue('status') as keyof typeof statusStyles;
           return (
-            <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${statusColors[status]}`}>
-              {statusIcons[status]}
+            <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium shadow-sm ${statusStyles[status]?.class || ''}`}>
+              {statusStyles[status]?.icon}
               {status.charAt(0).toUpperCase() + status.slice(1)}
             </div>
           );
@@ -141,7 +153,7 @@ export const ApplicationsTable: React.FC<ApplicationsTableProps> = ({
         cell: ({ row }) => {
           const status = row.getValue('status') as string;
           const isDraft = status === 'draft';
-          
+
           return (
             <div className="flex gap-2 justify-end">
               <button
@@ -151,7 +163,7 @@ export const ApplicationsTable: React.FC<ApplicationsTableProps> = ({
               >
                 <EyeIcon className="w-4 h-4" />
               </button>
-              
+
               {isDraft && (
                 <>
                   <button
@@ -161,7 +173,7 @@ export const ApplicationsTable: React.FC<ApplicationsTableProps> = ({
                   >
                     <PencilSquareIcon className="w-4 h-4" />
                   </button>
-                  
+
                   <button
                     onClick={() => onCancel(row.original.id)}
                     className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full transition-colors"
@@ -212,7 +224,7 @@ export const ApplicationsTable: React.FC<ApplicationsTableProps> = ({
             onChange={(e) => setGlobalFilter(e.target.value)}
           />
         </div>
-        
+
         <div className="flex items-center gap-2">
           <select
             className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
@@ -258,8 +270,8 @@ export const ApplicationsTable: React.FC<ApplicationsTableProps> = ({
           <tbody className="bg-white divide-y divide-gray-200">
             {table.getRowModel().rows.length > 0 ? (
               table.getRowModel().rows.map((row) => (
-                <tr 
-                  key={row.id} 
+                <tr
+                  key={row.id}
                   className={row.original.status !== 'draft' ? 'bg-gray-50 opacity-90' : 'hover:bg-gray-50 transition-colors'}
                 >
                   {row.getVisibleCells().map((cell) => (
@@ -289,7 +301,7 @@ export const ApplicationsTable: React.FC<ApplicationsTableProps> = ({
           <span className="font-medium">{table.getPageCount()}</span>{' '}
           pages ({table.getFilteredRowModel().rows.length} applications)
         </div>
-        
+
         <div className="flex items-center gap-2">
           <button
             onClick={() => table.previousPage()}
@@ -298,17 +310,17 @@ export const ApplicationsTable: React.FC<ApplicationsTableProps> = ({
           >
             <ChevronLeftIcon className="h-4 w-4" />
           </button>
-          
+
           {Array.from({ length: Math.min(5, table.getPageCount()) }).map((_, i) => {
-            const pageIndex = table.getPageCount() <= 5 
-              ? i 
+            const pageIndex = table.getPageCount() <= 5
+              ? i
               : Math.min(
-                  Math.max(0, table.getPageCount() - 5), 
+                  Math.max(0, table.getPageCount() - 5),
                   Math.max(0, table.getState().pagination.pageIndex - 2)
                 ) + i;
-            
+
             if (pageIndex >= table.getPageCount()) return null;
-            
+
             return (
               <button
                 key={pageIndex}
@@ -319,7 +331,7 @@ export const ApplicationsTable: React.FC<ApplicationsTableProps> = ({
               </button>
             );
           })}
-          
+
           <button
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}

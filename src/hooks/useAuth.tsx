@@ -2,6 +2,8 @@
 import React, { createContext, useState, useContext, ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { RegistrationProps } from "@/types/RegistrationModel";
+import { toast } from "react-toastify";
+import 'react-toastify/dist/ReactToastify.css';
 
 interface AuthContextProps {
   token: string | null;
@@ -36,6 +38,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (tin: string, email: string, password: string) => {
     try {
+      // Show loading toast
+      const toastId = toast.loading("Signing in...");
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/login`, {
         method: "POST",
         headers: {
@@ -47,12 +52,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const data = await response.json();
 
       if (response.ok && data.success) {
+        // Update toast to success
+        toast.update(toastId, {
+          render: "Successfully signed in!",
+          type: "success",
+          isLoading: false,
+          autoClose: 3000
+        });
         handleSuccessfulAuth(data.data);
       } else {
+        // Update toast to error
+        toast.update(toastId, {
+          render: data.message || "Login failed",
+          type: "error",
+          isLoading: false,
+          autoClose: 5000
+        });
         throw new Error(data.message || "Login failed");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login failed:", error);
+      // Show error toast if not already shown
+      if (!toast.isActive("login-error")) {
+        toast.error(error.message || "Login failed", { toastId: "login-error" });
+      }
       throw error;
     }
   };
@@ -70,6 +93,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   ) => {
     try {
+      // Show loading toast
+      const toastId = toast.loading("Creating your account...");
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/register`, {
         method: "POST",
         headers: {
@@ -91,13 +117,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const data = await response.json();
 
       if (response.ok && data.success) {
+        // Update toast to success
+        toast.update(toastId, {
+          render: "Account created successfully!",
+          type: "success",
+          isLoading: false,
+          autoClose: 3000
+        });
         // Reuse token logic directly instead of calling login again
         handleSuccessfulAuth(data.data);
       } else {
+        // Update toast to error
+        toast.update(toastId, {
+          render: data.message || "Registration failed",
+          type: "error",
+          isLoading: false,
+          autoClose: 5000
+        });
         throw new Error(data.message || "Registration failed");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Registration failed:", error);
+      // Show error toast if not already shown
+      if (!toast.isActive("register-error")) {
+        toast.error(error.message || "Registration failed", { toastId: "register-error" });
+      }
       throw error;
     }
   };
@@ -106,6 +150,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setToken(null);
     localStorage.removeItem("accessToken");
     document.cookie = "accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+    toast.success("You have been logged out successfully");
     router.push("/signin");
   };
 
