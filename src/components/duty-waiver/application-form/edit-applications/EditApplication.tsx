@@ -63,7 +63,12 @@ export default function EditApplicationForm({ id }: EditApplicationFormProps) {
             endDate: data.endDate ? new Date(data.endDate) : null,
           });
           setItems(data.items || []);
-          setAttachments(data.attachments || []);
+          setAttachments((data.attachments || []).map((a: any, idx: number) => ({
+            id: `${a.type}-${idx}`,
+            type: a.type,
+            file: a.file || null,
+          })));
+
         }
       } catch (err) {
         console.error('Failed to load application:', err);

@@ -67,7 +67,7 @@ export const ProjectDetailsStep: React.FC<ProjectDetailsStepProps> = ({
       try {
         const types = await getApplicationTypes();
         const options = types.map((type: any) => ({
-          value: type.id,
+          value: String(type.id),
           label: type.name
         }));
         setProjectTypeOptions(options);

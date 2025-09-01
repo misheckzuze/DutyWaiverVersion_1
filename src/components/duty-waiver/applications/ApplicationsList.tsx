@@ -19,22 +19,31 @@ const ApplicationsList = () => {
 
   const {
     getApplicationsByTIN,
+    getApplicationTypes,
     applications,
     isLoading,
     error
   } = useApplication();
 
+  const [typeMap, setTypeMap] = useState<Record<string, string>>({});
+
   useEffect(() => {
-    const fetchApplications = async () => {
+    const fetchAll = async () => {
       try {
-        await getApplicationsByTIN();
+        const [apps, types] = await Promise.all([
+          getApplicationsByTIN(),
+          getApplicationTypes()
+        ]);
+        const map: Record<string, string> = {};
+        (types || []).forEach((t: any) => { map[String(t.id)] = t.name; });
+        setTypeMap(map);
         toast.success("Applications loaded successfully");
       } catch (err) {
         toast.error("Failed to load applications");
       }
     };
 
-    fetchApplications();
+    fetchAll();
   }, []);
 
   const handleEdit = (id: string) => {
@@ -78,11 +87,11 @@ const ApplicationsList = () => {
             applications={applications.map(app => ({
               id: app.id.toString(),
               projectName: app.projectName,
-              projectType: `Type ${app.applicationTypeId}`, // Replace with real label if needed
+              projectType: typeMap[String(app.applicationTypeId)] || `Type ${app.applicationTypeId}`,
               projectValue: app.projectValue,
               status: app.status.toLowerCase(),
               createdAt: new Date(app.submissionDate),
-              updatedAt: new Date(app.submissionDate), // Replace with updatedDate if needed
+              updatedAt: new Date(app.submissionDate)
             }))}
             onEdit={handleEdit}
             onCancel={handleCancel}

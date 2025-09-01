@@ -1,16 +1,34 @@
 'use client';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Item } from '@/types/ItemModel';
-import { unitOfMeasureOptions } from '@/utils/constants';
+import useApplication from '@/hooks/useApplications';
 
 interface ViewItemsProps {
   items: Item[];
 }
 
 export const ViewItems: React.FC<ViewItemsProps> = ({ items }) => {
+  const { getUnitOfMeasure } = useApplication();
+  const [uomMap, setUomMap] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const uoms = await getUnitOfMeasure();
+        const map: Record<string, string> = {};
+        (uoms || []).forEach((u: any) => {
+          if (u.code != null) map[String(u.code)] = u.code;
+          if (u.id != null) map[String(u.id)] = u.code;
+        });
+        setUomMap(map);
+      } catch {}
+    };
+    load();
+  }, [getUnitOfMeasure]);
+
   const getUnitOfMeasureLabel = (uomId: number | string) => {
-    const uom = unitOfMeasureOptions.find(u => u.value === uomId.toString());
-    return uom ? uom.label : uomId.toString();
+    const key = String(uomId);
+    return uomMap[key] || key;
   };
 
   return (

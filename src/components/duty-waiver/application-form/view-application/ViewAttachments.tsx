@@ -53,11 +53,11 @@ export const ViewAttachments: React.FC<ViewAttachmentsProps> = ({ attachments })
               className="flex items-center p-4 border border-gray-200 rounded-lg bg-white hover:bg-gray-50 transition-colors"
             >
               <div className="mr-4">
-                {getFileIcon(attachment.file?.name || '')}
+                {getFileIcon((typeof attachment.file === 'string' ? attachment.file : attachment.file?.name) || '')}
               </div>
               <div className="flex-1 min-w-0">
                 <h4 className="text-sm font-medium text-gray-800 truncate">
-                  {attachment.file?.name || 'Unnamed file'}
+                  {(typeof attachment.file === 'string' ? attachment.file : attachment.file?.name) || 'Unnamed file'}
                 </h4>
                 <p className="text-xs text-gray-500 mt-1">
                   Type: {attachment.type || 'Unknown'}

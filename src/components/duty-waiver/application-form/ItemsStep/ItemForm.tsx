@@ -43,7 +43,7 @@ export const ItemForm: React.FC<ItemFormProps> = ({
           const unitOfMeasures = await getUnitOfMeasure();
           const options = unitOfMeasures.map((type: any) => ({
             value: type.code,
-            label: type.description
+            label: type.code
           }));
           setUnitOfMeasureOptions(options);
         } catch (error) {

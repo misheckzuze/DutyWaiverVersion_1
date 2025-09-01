@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -13,6 +13,7 @@ import {
   SortingState,
 } from '@tanstack/react-table';
 import { EyeCloseIcon,TrashBinIcon, ChevronLeftIcon, ChevronRightIcon, ArrowUpIcon, ArrowDownIcon } from '@/icons';
+import useApplication from '@/hooks/useApplications';
 
 interface Item {
   id: string;
@@ -34,6 +35,23 @@ const ItemTable = ({ items, editItem, deleteItem, calculateTotalValue }: Props) 
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState('');
+  const [uomMap, setUomMap] = useState<Record<string, string>>({});
+  const { getUnitOfMeasure } = useApplication();
+
+  useEffect(() => {
+    const loadUoms = async () => {
+      try {
+        const uoms = await getUnitOfMeasure();
+        const map: Record<string, string> = {};
+        (uoms || []).forEach((u: any) => {
+          if (u.code != null) map[String(u.code)] = u.code;
+          if (u.id != null) map[String(u.id)] = u.code;
+        });
+        setUomMap(map);
+      } catch {}
+    };
+    loadUoms();
+  }, [getUnitOfMeasure]);
 
   const columns = useMemo<ColumnDef<Item>[]>(
     () => [
@@ -55,7 +73,14 @@ const ItemTable = ({ items, editItem, deleteItem, calculateTotalValue }: Props) 
       {
         accessorKey: 'unitOfMeasure',
         header: 'Unit',
-        cell: info => <span className="text-gray-500 uppercase">{info.getValue() as string}</span>
+        cell: info => {
+          // Prefer unitOfMeasure (code) if present, else fall back to uomId from original row
+          const rawFromAccessor = info.getValue() as string | number | undefined;
+          const rawFromRow = (info.row && (info.row.original as any)?.uomId) as string | number | undefined;
+          const raw = rawFromAccessor ?? rawFromRow ?? '';
+          const label = uomMap[String(raw)] || String(raw);
+          return <span className="text-gray-600">{label}</span>;
+        }
       },
       {
         accessorKey: 'value',

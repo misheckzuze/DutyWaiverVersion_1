@@ -42,10 +42,11 @@ const statusStyles: Record<string, { class: string; icon: React.ReactNode }> = {
 
 export default function RecentApplications() {
   const router = useRouter();
-  const { getApplicationsByTIN, applications, isLoading, submitApplication } = useApplication();
+  const { getApplicationsByTIN, getApplicationTypes, applications, isLoading, submitApplication } = useApplication();
 
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'submitted' | 'processing' | 'approved' | 'rejected'>('all');
+  const [typeMap, setTypeMap] = useState<Record<string, string>>({});
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmMsg, setConfirmMsg] = useState('');
@@ -54,7 +55,16 @@ export default function RecentApplications() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    getApplicationsByTIN();
+    const load = async () => {
+      await getApplicationsByTIN();
+      try {
+        const types = await getApplicationTypes();
+        const map: Record<string, string> = {};
+        (types || []).forEach((t: any) => { map[String(t.id)] = t.name; });
+        setTypeMap(map);
+      } catch {}
+    };
+    load();
   }, []);
 
   const recent = useMemo(() => {
@@ -153,7 +163,7 @@ export default function RecentApplications() {
                         <span className="text-gray-500 text-theme-xs dark:text-gray-400">Ref: {app.referenceNumber || 'N/A'}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="py-3 text-gray-600 text-theme-sm dark:text-gray-300">{`Type ${app.applicationTypeId}`}</TableCell>
+                    <TableCell className="py-3 text-gray-600 text-theme-sm dark:text-gray-300">{typeMap[String(app.applicationTypeId)] || `Type ${app.applicationTypeId}`}</TableCell>
                     <TableCell className="py-3 text-gray-600 text-theme-sm dark:text-gray-300">{new Date(app.submissionDate).toLocaleDateString()}</TableCell>
                     <TableCell className="py-3">
                       <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium shadow-sm ${statusStyles[statusKey]?.class || ''}`}>
@@ -195,7 +205,7 @@ export default function RecentApplications() {
               })}
               {recent.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="py-6 text-center text-gray-500 dark:text-gray-400">No recent applications found</TableCell>
+                  <TableCell className="py-6 text-center text-gray-500 dark:text-gray-400">No recent applications found</TableCell>
                 </TableRow>
               )}
             </TableBody>

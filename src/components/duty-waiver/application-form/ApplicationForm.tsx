@@ -135,7 +135,7 @@ export default function ApplicationForm() {
       endDate: projectDetails.endDate?.toISOString().split('T')[0] || "",
       attachments: attachments.map(att => ({
         type: att.type,
-        file: att.file?.name || ""
+        file: typeof att.file === 'string' ? att.file : (att.file?.name || "")
       })),
       items: items.map(item => ({
         description: item.description,
@@ -144,13 +144,13 @@ export default function ApplicationForm() {
         value: item.value,
         currency: "MWK",
         dutyAmount: 200,
-        uomId: 1
+        uomId: (item.unitOfMeasure ?? (item as any).uomId) as any
       })),
       submissionDate: new Date().toISOString(),
       status: "Under Review",
       userId: userData.userId,
       tin: userData.tin,
-      applicationTypeId: 1
+      applicationTypeId: Number(projectDetails.projectType) || 0
     };
 
     console.log("Final form data being submitted:", fullFormData); // Debug log
@@ -188,7 +188,7 @@ export default function ApplicationForm() {
       endDate: projectDetails.endDate?.toISOString().split('T')[0] || "",
       attachments: attachments.map(att => ({
         type: att.type,
-        file: att.file?.name || ""
+        file: typeof att.file === 'string' ? att.file : (att.file?.name || "")
       })),
       items: items.map(item => ({
         description: item.description,
@@ -197,13 +197,13 @@ export default function ApplicationForm() {
         value: item.value,
         currency: "MWK",
         dutyAmount: 200,
-        uomId: 1
+        uomId: (item.unitOfMeasure ?? (item as any).uomId) as any
       })),
       submissionDate: new Date().toISOString(),
       status: "Draft",
       userId: userData.userId,
       tin: userData.tin,
-      applicationTypeId: 1
+      applicationTypeId: Number(projectDetails.projectType) || 0
     };
 
     console.log("Final form data being submitted:", fullFormData); // Debug log

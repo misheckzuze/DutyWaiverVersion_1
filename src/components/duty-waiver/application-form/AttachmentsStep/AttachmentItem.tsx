@@ -22,6 +22,8 @@ export const AttachmentItem: React.FC<AttachmentItemProps> = ({
     onFileChange(attachment.id, file);
   };
 
+  const currentFileName = typeof attachment.file === 'string' ? attachment.file : attachment.file?.name;
+
   const [attachmentTypeOptions, setAttachmentTypeOptions] = useState<{ value: string, label: string }[]>([]);
   const { getAttachmentTypes } = useApplication();
 
@@ -51,8 +53,8 @@ export const AttachmentItem: React.FC<AttachmentItemProps> = ({
       <div className="flex justify-between items-center">
         <div>
           <h4 className="font-medium">{attachmementTypeLabel}</h4>
-          {attachment.file && (
-            <p className="text-sm text-gray-500">{attachment.file.name}</p>
+          {currentFileName && (
+            <p className="text-sm text-gray-500">{currentFileName}</p>
           )}
         </div>
         <div className="flex gap-2">
@@ -66,7 +68,7 @@ export const AttachmentItem: React.FC<AttachmentItemProps> = ({
             htmlFor={`file-upload-${attachment.id}`}
             className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md cursor-pointer"
           >
-            {attachment.file ? 'Change' : 'Upload'}
+            {currentFileName ? 'Change' : 'Upload'}
           </label>
           <Button
             onClick={() => onRemove(attachment.id)}

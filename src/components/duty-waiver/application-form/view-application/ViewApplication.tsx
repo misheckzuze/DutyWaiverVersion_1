@@ -83,7 +83,12 @@ export default function ViewApplication({ id }: ViewApplicationProps) {
           });
 
           setItems(data.items || []);
-          setAttachments(data.attachments || []);
+          // Map attachments to include stable local ids and keep file string
+          setAttachments((data.attachments || []).map((a: any, idx: number) => ({
+            id: `${a.type}-${idx}`,
+            type: a.type,
+            file: a.file || null,
+          })));
 
           // Show success toast
           toast.success("Application details loaded successfully");

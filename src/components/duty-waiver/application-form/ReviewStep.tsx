@@ -22,8 +22,9 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
   const calculateTotalValue = () => items.reduce((sum, item) => sum + (item.value || 0), 0);
 
     const [attachmentTypeOptions, setAttachmentTypeOptions] = useState<{ value: string, label: string }[]>([]);
-    const { getAttachmentTypes } = useApplication();
-  
+    const [uomMap, setUomMap] = useState<Record<string, string>>({});
+    const { getAttachmentTypes, getUnitOfMeasure } = useApplication();
+
     useEffect(() => {
   
       const fetchAttachmentTypes = async () => {
@@ -40,10 +41,25 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
       };
   
       fetchAttachmentTypes();
-    }, []);
+
+      const fetchUoms = async () => {
+        try {
+          const uoms = await getUnitOfMeasure();
+          const map: Record<string, string> = {};
+          (uoms || []).forEach((u: any) => {
+            if (u.code != null) map[String(u.code)] = u.code;
+            if (u.id != null) map[String(u.id)] = u.code;
+          });
+          setUomMap(map);
+        } catch (e) {
+          console.error('Failed to fetch UOMs:', e);
+        }
+      };
+      fetchUoms();
+    }, [getUnitOfMeasure]);
 
   const getAttachmentTypeLabel = (value: string) => {
-    const option = attachmentTypeOptions.find(opt => opt.value === value);
+    const option = attachmentTypeOptions.find(opt => opt.value === value || opt.label === value);
     return option ? option.label : value;
   };
 
@@ -154,7 +170,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
                       <td className="px-6 py-4 whitespace-nowrap">{item.hsCode}</td>
                       <td className="px-6 py-4 whitespace-nowrap">{item.description}</td>
                       <td className="px-6 py-4 whitespace-nowrap">{item.quantity}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">{item.unitOfMeasure}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">{uomMap[String((item as any).uomId ?? item.unitOfMeasure)] || String((item as any).uomId ?? item.unitOfMeasure)}</td>
                       <td className="px-6 py-4 whitespace-nowrap">{item.value?.toLocaleString() || 0}</td>
                     </tr>
                   ))}
@@ -182,7 +198,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
                     <EyeCloseIcon className="h-5 w-5 text-gray-400 mr-2" />
                     <span>{getAttachmentTypeLabel(attachment.type)}</span>
                     {attachment.file && (
-                      <span className="text-sm text-gray-500 ml-2">({attachment.file.name})</span>
+                      <span className="text-sm text-gray-500 ml-2">({typeof attachment.file === 'string' ? attachment.file : attachment.file.name})</span>
                     )}
                   </div>
                   {!attachment.file && (
