@@ -38,7 +38,7 @@ const navItems: NavItem[] = [
     ],
   },
   {
-    icon: <PlugInIcon />,
+    icon: <PageIcon />,
     name: "AEO",
     subItems: [
       { name: "Dashboard", path: "/aeo" },
