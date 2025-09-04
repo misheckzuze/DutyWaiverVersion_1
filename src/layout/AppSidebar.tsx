@@ -28,24 +28,24 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   {
-    icon: <GridIcon />,
-    name: "Dashboard",
-    path: "/",
+    icon: <BoxCubeIcon />,
+    name: "Duty Waiver",
+    subItems: [
+      { name: "Dashboard", path: "/" },
+      { name: "Apply", path: "/new-application" },
+      { name: "My Applications", path: "/my-applications" },
+      // { name: "Reports", path: "/reports" },
+    ],
   },
   {
-    icon: <ListIcon />,
-    name: "Apply",
-    path: "/new-application",
-  },
-  {
-    icon: <PageIcon />,
-    name: "My Applications",
-    path: "/my-applications",
-  },
-  {
-    icon: <PieChartIcon />,
-    name: "Reports",
-    path: "/reports",
+    icon: <PlugInIcon />,
+    name: "AEO",
+    subItems: [
+      { name: "Dashboard", path: "/aeo" },
+      { name: "New Application", path: "/aeo/new-aeo-application" },
+      { name: "My Applications", path: "/aeo/my-aeo-applications" },
+      // { name: "Reports", path: "/aeo/reports" },
+    ],
   },
 ];
 
@@ -197,7 +197,7 @@ const AppSidebar: React.FC = () => {
   const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   // const isActive = (path: string) => path === pathname;
-   const isActive = useCallback((path: string) => path === pathname, [pathname]);
+  const isActive = useCallback((path: string) => path === pathname, [pathname]);
 
   useEffect(() => {
     // Check if the current path matches any submenu item
@@ -299,6 +299,7 @@ const AppSidebar: React.FC = () => {
           )}
         </Link>
       </div>
+      
       <div className="flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar">
         <nav className="mb-6">
           <div className="flex flex-col gap-4">
