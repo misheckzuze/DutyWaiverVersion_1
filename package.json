@@ -35,12 +35,16 @@
     "react-dnd-html5-backend": "^16.0.1",
     "react-dom": "^19.0.0",
     "react-dropzone": "^14.3.5",
+  "zod": "^3.23.2",
+  "react-hook-form": "^7.50.1",
+  "@hookform/resolvers": "^3.1.1",
     "react-toastify": "^11.0.5",
     "swiper": "^11.2.0",
     "tailwind-merge": "^2.6.0",
     "uuid": "^11.1.0",
     "xlsx": "^0.18.5"
   },
+  "dependenciesMeta": {},
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@svgr/webpack": "^8.1.0",
