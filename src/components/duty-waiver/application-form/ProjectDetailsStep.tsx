@@ -148,6 +148,7 @@ export const ProjectDetailsStep: React.FC<ProjectDetailsStepProps> = ({
             value={localDetails.projectName}
             onChange={handleInputChange('projectName')}
             placeholder="Enter project name"
+            className={`w-full ${errors.projectType ? "border-red-500" : "border-gray-300 dark:bg-dark-900"} rounded-md`}
           />
           {errors.projectName && (
             <p className="mt-1 text-sm text-red-600">{errors.projectName}</p>
@@ -162,7 +163,8 @@ export const ProjectDetailsStep: React.FC<ProjectDetailsStepProps> = ({
               value={localDetails.projectType}
               placeholder="Select project type"
               onChange={handleSelectChange('projectType')}
-              className="w-full dark:bg-dark-900"
+              className={`w-full ${errors.projectType ? "border-red-500" : "border-gray-300 dark:bg-dark-900"} rounded-md`}
+              
             />
             <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
               <ChevronDownIcon />
@@ -181,6 +183,7 @@ export const ProjectDetailsStep: React.FC<ProjectDetailsStepProps> = ({
           onChange={handleTextAreaChange('projectDescription')}
           rows={4}
           placeholder="Describe the project in detail..."
+          className={`w-full ${errors.projectType ? "border-red-500" : "border-gray-300 dark:bg-dark-900"} rounded-md`}
         />
         {errors.projectDescription && (
           <p className="mt-1 text-sm text-red-600">{errors.projectDescription}</p>
@@ -195,7 +198,7 @@ export const ProjectDetailsStep: React.FC<ProjectDetailsStepProps> = ({
             value={localDetails.projectDistrict}
             placeholder="Select district"
             onChange={handleSelectChange('projectDistrict')}
-            className="w-full"
+            className={`w-full ${errors.projectType ? "border-red-500" : "border-gray-300 dark:bg-dark-900"} rounded-md`}
           />
           {errors.projectDistrict && (
             <p className="mt-1 text-sm text-red-600">{errors.projectDistrict}</p>
@@ -209,6 +212,7 @@ export const ProjectDetailsStep: React.FC<ProjectDetailsStepProps> = ({
             value={localDetails.projectPhysicalAddress}
             onChange={handleInputChange('projectPhysicalAddress')}
             placeholder="Enter physical address (street, plot number, etc.)"
+            className={`w-full ${errors.projectType ? "border-red-500" : "border-gray-300 dark:bg-dark-900"} rounded-md`}
           />
           {errors.projectPhysicalAddress && (
             <p className="mt-1 text-sm text-red-600">{errors.projectPhysicalAddress}</p>
@@ -224,6 +228,7 @@ export const ProjectDetailsStep: React.FC<ProjectDetailsStepProps> = ({
             placeholder="Select start date"
             defaultDate={localDetails.startDate ?? undefined}
             onChange={(dates) => handleDateChange('startDate', dates)}
+           inputClassName={errors.startDate ? "border-red-500" : "border-gray-300 dark:bg-dark-900"}
           />
           {errors.startDate && (
             <p className="mt-1 text-sm text-red-600">{errors.startDate}</p>
@@ -237,6 +242,7 @@ export const ProjectDetailsStep: React.FC<ProjectDetailsStepProps> = ({
             placeholder="Select end date"
             defaultDate={localDetails.endDate ?? undefined}
             onChange={(dates) => handleDateChange('endDate', dates)}
+            inputClassName={errors.startDate ? "border-red-500" : "border-gray-300 dark:bg-dark-900"}
           />
           {errors.endDate && (
             <p className="mt-1 text-sm text-red-600">{errors.endDate}</p>
@@ -283,6 +289,7 @@ export const ProjectDetailsStep: React.FC<ProjectDetailsStepProps> = ({
               onChange={handleProjectValueChange}
               placeholder="Enter total project value"
               formatNumber={true}
+              className={`w-full ${errors.projectType ? "border-red-500" : "border-gray-300 dark:bg-dark-900"} rounded-md`}
             />
             <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500">
               MWK
@@ -301,6 +308,8 @@ export const ProjectDetailsStep: React.FC<ProjectDetailsStepProps> = ({
           onChange={handleTextAreaChange('reasonForApplying')}
           rows={4}
           placeholder="Explain why you're applying for duty waiver..."
+          className={`w-full ${errors.projectType ? "border-red-500" : "border-gray-300 dark:bg-dark-900"} rounded-md`}
+          
         />
         {errors.reasonForApplying && (
           <p className="mt-1 text-sm text-red-600">{errors.reasonForApplying}</p>

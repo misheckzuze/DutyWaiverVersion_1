@@ -22,6 +22,7 @@ type PropsType = {
   onChange?: (selectedDates: Date[], dateStr: string, instance: any) => void;
   defaultDate?: string | Date | string[] | Date[];
   placeholder?: string;
+  inputClassName?: string;
 };
 
 export default function DatePicker({
@@ -31,6 +32,7 @@ export default function DatePicker({
   label,
   defaultDate,
   placeholder,
+  inputClassName,
 }: PropsType) {
   useEffect(() => {
     flatpickr(`#${id}`, {
