@@ -82,14 +82,22 @@ export default function ApplicationForm() {
   });
 
   // Update formData when userData changes
-  useEffect(() => {
+  // useEffect(() => {
+  //   setFormData(prev => ({
+  //     ...prev,
+  //     userId: userData.userId,
+  //     tin: userData.tin
+  //   }));
+  //   console.log("Updated formData with user details:", formData); // Debug log
+  // }, [userData]);
+    useEffect(() => {
     setFormData(prev => ({
       ...prev,
       userId: userData.userId,
       tin: userData.tin
     }));
     console.log("Updated formData with user details:", formData); // Debug log
-  }, [userData]);
+  }, []);
 
   const handleNextStep = () => {
     if (currentStep < 4) setCurrentStep(currentStep + 1);
@@ -197,7 +205,8 @@ export default function ApplicationForm() {
         value: item.value,
         currency: "MWK",
         dutyAmount: 200,
-        uomId: (item.unitOfMeasure ?? (item as any).uomId) as any
+         uomId: 1
+        // uomId: (item.unitOfMeasure ?? (item as any).uomId) as any
       })),
       submissionDate: new Date().toISOString(),
       status: "Draft",

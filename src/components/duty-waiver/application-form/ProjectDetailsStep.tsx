@@ -91,7 +91,7 @@ export const ProjectDetailsStep: React.FC<ProjectDetailsStepProps> = ({
 
     fetchProjectTypes();
     fetchDistricts();
-  }, [details]);
+  }, []);
 
 
   const handleInputChange = (field: keyof ProjectDetails) => (e: React.ChangeEvent<HTMLInputElement>) => {
