@@ -183,20 +183,6 @@ export default function AEOForm() {
                             </label>
                         ))}
                     </div>
-                    
-                    {/* <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {recordKeepings.map((r, i) => (
-                            <div key={i} className="p-3 border rounded bg-white dark:bg-gray-800">
-                                <label className="flex items-center gap-2"><input type="checkbox" checked={r.documentsRecordsKept} onChange={(e) => setRecordKeepings(s => { const c = [...s]; c[i].documentsRecordsKept = e.target.checked; return c; })} /> Documents/Records Kept</label>
-                                <div className="mt-2 grid grid-cols-2 gap-2">
-                                    <label className="flex items-center gap-2"><input type="checkbox" checked={r.keptInHardCopy} onChange={(e) => setRecordKeepings(s => { const c = [...s]; c[i].keptInHardCopy = e.target.checked; return c; })} /> Hard Copy</label>
-                                    <label className="flex items-center gap-2"><input type="checkbox" checked={r.keptComputerised} onChange={(e) => setRecordKeepings(s => { const c = [...s]; c[i].keptComputerised = e.target.checked; return c; })} /> Computerised</label>
-                                   
-                                </div>
-                                 <label className="flex items-center gap-2"><input type="checkbox" checked={r.usesAccountingSystemLedger} onChange={(e) => setRecordKeepings(s => { const c = [...s]; c[i].usesAccountingSystemLedger = e.target.checked; return c; })} /> Uses Accounting System Ledger</label>
-                            </div>
-                        ))}
-                    </div> */}
                 </section>
 
                 {/* Banking Arrangements */}
@@ -381,13 +367,6 @@ export default function AEOForm() {
                         ))}
                     </div>
                 </section>
-
-
-
-
-
-
-
                 {/* Declarations */}
                 <section className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
                     <div className="flex items-center justify-between">
@@ -418,13 +397,6 @@ export default function AEOForm() {
                         ))}
                     </div>
                 </section>
-
-
-
-
-
-
-
                 <div className="flex items-center gap-3">
                     <button type="submit" className="px-4 py-2 bg-brand-500 text-white rounded" disabled={isSubmitting}>{isSubmitting ? 'Submitting...' : 'Submit AEO Application'}</button>
                     {message && <div className="text-sm text-gray-600">{message}</div>}
