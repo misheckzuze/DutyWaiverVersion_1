@@ -86,6 +86,7 @@ export default function AEOForm() {
 
     const aeo = useAEOProfile();
     const [existingCompanyId, setExistingCompanyId] = useState<number | null>(null);
+    const [companyInfo, setCompanyInfo] = useState<any>({ id: null, tin: '', tradingName: '', address: '', email: '', phonenumber: '', otp: null, deleted: false });
 
     // Normalize API response accepting camelCase or PascalCase
     const normalizeProfile = (raw: any) => {
@@ -96,6 +97,8 @@ export default function AEOForm() {
         const normalized: any = {
             id: get(r, ['id', 'Id', 'ID']),
             tin: get(r, ['tin', 'Tin']),
+            // include raw company object when present
+            company: (raw && raw.company) ? raw.company : (r || {}),
             customsAgents: get(raw, ['customsAgents', 'CustomsAgents']) || get(r, ['customsAgents']) || [],
             companyContacts: get(raw, ['companyContacts', 'CompanyContacts']) || get(r, ['companyContacts']) || [],
             // API sometimes returns companyActivities as an array — take the first record
@@ -125,6 +128,7 @@ export default function AEOForm() {
                 if (!profile) return;
                 console.debug('Fetched AEO profile:', resp);
                 if (profile.tin) setValue('tin', profile.tin);
+                if (profile.company) setCompanyInfo(profile.company);
                 if (profile.declarations && profile.declarations.length) setValue('declarations', profile.declarations);
                 if (profile.customsAgents) setCustomsAgents(profile.customsAgents.length ? profile.customsAgents : [{ ...emptyAgent }]);
                 if (profile.companyContacts) setCompanyContacts(profile.companyContacts.length ? profile.companyContacts : [{ ...emptyContact }]);
@@ -136,14 +140,16 @@ export default function AEOForm() {
                 if (profile.overseasPurchasers) setOverseasPurchasers(profile.overseasPurchasers.length ? profile.overseasPurchasers : [{ ...emptyOverseas }]);
                 if (profile.overseasSuppliers) setOverseasSuppliers(profile.overseasSuppliers.length ? profile.overseasSuppliers : [{ ...emptySupplier }]);
                 if (profile.recordKeepings) setRecordKeepings(profile.recordKeepings);
-                // Accept id === 0 as valid existing id
-                if (profile.id !== undefined && profile.id !== null) setExistingCompanyId(profile.id);
+                // Accept id === 0 as valid existing id (use company.id if present)
+                const idToUse = (profile.company && typeof profile.company.id !== 'undefined' && profile.company.id !== null) ? profile.company.id : profile.id;
+                if (typeof idToUse !== 'undefined' && idToUse !== null) setExistingCompanyId(idToUse);
             } catch (err) {
                 console.debug('No existing AEO profile or failed to fetch', err);
             }
         })();
         return () => { mounted = false; };
-    }, [aeo, setValue]);
+    }, []);
+    // }, [aeo, setValue]);
 
     // Remove server-managed fields and undefineds
     const sanitizePayload = (p: any) => {
@@ -173,10 +179,13 @@ export default function AEOForm() {
         setMessage(null);
 
         const payload = {
-            tin: formData.tin,
+            company: {
+                ...companyInfo,
+                tin: formData.tin,
+            },
             customsAgents,
             companyContacts,
-            companyActivity,
+            companyActivities: [companyActivity],
             licenseDetails,
             exemptionItems,
             drawbackItems,
@@ -184,14 +193,16 @@ export default function AEOForm() {
             bankingArrangements,
             overseasPurchasers: filterOverseas(overseasPurchasers, 'purchaserName'),
             overseasSuppliers: filterOverseas(overseasSuppliers, 'supplierName'),
-            recordKeepings,
+            recordKeepings: [recordKeepings],
         };
 
         try {
             const sanitized = sanitizePayload(payload);
             let data: any;
-            if (existingCompanyId) {
-                data = await aeo.update(existingCompanyId, sanitized);
+            // use company id for the PUT endpoint (even if 0)
+            const companyIdForUpdate = (sanitized.company && typeof sanitized.company.id !== 'undefined' && sanitized.company.id !== null) ? sanitized.company.id : existingCompanyId;
+            if (typeof companyIdForUpdate !== 'undefined' && companyIdForUpdate !== null) {
+                data = await aeo.update(companyIdForUpdate, sanitized);
                 setMessage('Company profile updated.');
             } else {
                 data = await aeo.create(sanitized);
@@ -237,6 +248,7 @@ export default function AEOForm() {
                                 label="Company TIN"
                                 {...register("tin")}
                                 placeholder="20202020"
+                                disabled
                                 required
                             />
                         </div>
@@ -660,7 +672,9 @@ export default function AEOForm() {
                                 <span className="ml-2">Submitting...</span>
                             </>
                         ) : (
-                            'Submit AEO Application'
+                            (typeof existingCompanyId !== 'undefined' && existingCompanyId !== null)
+                                ? 'Update Company Details'
+                                : 'Submit AEO Application'
                         )}
                     </button>
                 </div>
