@@ -32,7 +32,7 @@ const emptyRecord = { documentsRecordsKept: true, keptInHardCopy: false, keptMic
 export default function AEOForm() {
     const [customsAgents, setCustomsAgents] = useState([{ ...emptyAgent }]);
     const [companyContacts, setCompanyContacts] = useState([{ ...emptyContact }]);
-    const [companyActivity, setCompanyActivity] = useState({
+    const companyActivityTemplate = {
         isImporter: true,
         isExporter: false,
         isManufacturer: false,
@@ -44,9 +44,10 @@ export default function AEOForm() {
         isCustomsClearingAgent: false,
         isFreightForwarder: false,
         isTransporter: false,
-    });
+    };
+    const [companyActivity, setCompanyActivity] = useState({ ...companyActivityTemplate });
 
-     const [recordKeepings, setRecordKeepings] = useState({
+     const recordKeepingsTemplate = {
         documentsRecordsKept: true,
         keptInHardCopy: false,
         keptMicrofilmed: false,
@@ -54,7 +55,8 @@ export default function AEOForm() {
         usesAccountingSystemLedger: false,
         usesHardCopyLedger: false,
         usesComputerisedLedger: false
-    });
+    };
+     const [recordKeepings, setRecordKeepings] = useState({ ...recordKeepingsTemplate });
     const [licenseDetails, setLicenseDetails] = useState([{ ...emptyLicense }]);
     const [exemptionItems, setExemptionItems] = useState([{ ...emptyExemption }]);
     const [drawbackItems, setDrawbackItems] = useState([{ ...emptyDrawback }]);
@@ -116,6 +118,31 @@ export default function AEOForm() {
         return normalized;
     };
 
+    const pickFlags = (obj: any, template: any) => {
+        if (!obj || typeof obj !== 'object') return { ...template };
+        const out: any = { ...template };
+        for (const k of Object.keys(template)) {
+            if (typeof obj[k] === 'boolean') out[k] = obj[k];
+        }
+        return out;
+    };
+
+    // Remove server-managed fields recursively before storing in state
+    const stripServerFields = (v: any): any => {
+        if (v === null || v === undefined) return v;
+        if (Array.isArray(v)) return v.map(stripServerFields);
+        if (typeof v !== 'object') return v;
+        const copy: any = {};
+        for (const key of Object.keys(v)) {
+            if (['createdAt', 'updatedAt', 'companyId'].includes(key)) continue;
+            const val = v[key];
+            if (Array.isArray(val)) copy[key] = val.map(stripServerFields);
+            else if (val && typeof val === 'object') copy[key] = stripServerFields(val);
+            else copy[key] = val;
+        }
+        return copy;
+    };
+
     useEffect(() => {
         const t = typeof window !== 'undefined' ? localStorage.getItem('Tin') : '';
         if (!t) return;
@@ -129,17 +156,17 @@ export default function AEOForm() {
                 console.debug('Fetched AEO profile:', resp);
                 if (profile.tin) setValue('tin', profile.tin);
                 if (profile.company) setCompanyInfo(profile.company);
-                if (profile.declarations && profile.declarations.length) setValue('declarations', profile.declarations);
-                if (profile.customsAgents) setCustomsAgents(profile.customsAgents.length ? profile.customsAgents : [{ ...emptyAgent }]);
-                if (profile.companyContacts) setCompanyContacts(profile.companyContacts.length ? profile.companyContacts : [{ ...emptyContact }]);
-                if (profile.companyActivity) setCompanyActivity(profile.companyActivity);
-                if (profile.licenseDetails) setLicenseDetails(profile.licenseDetails.length ? profile.licenseDetails : [{ ...emptyLicense }]);
-                if (profile.exemptionItems) setExemptionItems(profile.exemptionItems.length ? profile.exemptionItems : [{ ...emptyExemption }]);
-                if (profile.drawbackItems) setDrawbackItems(profile.drawbackItems.length ? profile.drawbackItems : [{ ...emptyDrawback }]);
-                if (profile.bankingArrangements) setBankingArrangements(profile.bankingArrangements.length ? profile.bankingArrangements : [{ ...emptyBank }]);
-                if (profile.overseasPurchasers) setOverseasPurchasers(profile.overseasPurchasers.length ? profile.overseasPurchasers : [{ ...emptyOverseas }]);
-                if (profile.overseasSuppliers) setOverseasSuppliers(profile.overseasSuppliers.length ? profile.overseasSuppliers : [{ ...emptySupplier }]);
-                if (profile.recordKeepings) setRecordKeepings(profile.recordKeepings);
+                if (profile.declarations && profile.declarations.length) setValue('declarations', profile.declarations.map(stripServerFields));
+                if (profile.customsAgents) setCustomsAgents(profile.customsAgents.length ? profile.customsAgents.map(stripServerFields) : [{ ...emptyAgent }]);
+                if (profile.companyContacts) setCompanyContacts(profile.companyContacts.length ? profile.companyContacts.map(stripServerFields) : [{ ...emptyContact }]);
+                if (profile.companyActivity) setCompanyActivity(pickFlags(profile.companyActivity, companyActivityTemplate));
+                if (profile.licenseDetails) setLicenseDetails(profile.licenseDetails.length ? profile.licenseDetails.map(stripServerFields) : [{ ...emptyLicense }]);
+                if (profile.exemptionItems) setExemptionItems(profile.exemptionItems.length ? profile.exemptionItems.map(stripServerFields) : [{ ...emptyExemption }]);
+                if (profile.drawbackItems) setDrawbackItems(profile.drawbackItems.length ? profile.drawbackItems.map(stripServerFields) : [{ ...emptyDrawback }]);
+                if (profile.bankingArrangements) setBankingArrangements(profile.bankingArrangements.length ? profile.bankingArrangements.map(stripServerFields) : [{ ...emptyBank }]);
+                if (profile.overseasPurchasers) setOverseasPurchasers(profile.overseasPurchasers.length ? profile.overseasPurchasers.map(stripServerFields) : [{ ...emptyOverseas }]);
+                if (profile.overseasSuppliers) setOverseasSuppliers(profile.overseasSuppliers.length ? profile.overseasSuppliers.map(stripServerFields) : [{ ...emptySupplier }]);
+                if (profile.recordKeepings) setRecordKeepings(pickFlags(stripServerFields(profile.recordKeepings), recordKeepingsTemplate));
                 // Accept id === 0 as valid existing id (use company.id if present)
                 const idToUse = (profile.company && typeof profile.company.id !== 'undefined' && profile.company.id !== null) ? profile.company.id : profile.id;
                 if (typeof idToUse !== 'undefined' && idToUse !== null) setExistingCompanyId(idToUse);
