@@ -37,16 +37,16 @@ const navItems: NavItem[] = [
       // { name: "Reports", path: "/reports" },
     ],
   },
-  {
-    icon: <PageIcon />,
-    name: "AEO",
-    subItems: [
-      { name: "Dashboard", path: "/aeo" },
-      { name: "New Application", path: "/aeo/new-aeo-application" },
-      { name: "My Applications", path: "/aeo/my-aeo-applications" },
-      // { name: "Reports", path: "/aeo/reports" },
-    ],
-  },
+      {
+        icon: <PageIcon />,
+        name: "AEO",
+        subItems: [
+          { name: "Dashboard", path: "/aeo" },
+          { name: "Company Profile", path: "/aeo/aeo-profile" },
+          { name: "My Applications", path: "/aeo/my-aeo-applications" },
+          // { name: "Reports", path: "/aeo/reports" },
+        ],
+      },
 ];
 
 const othersItems: NavItem[] = [
