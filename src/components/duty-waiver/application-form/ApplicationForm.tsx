@@ -24,7 +24,7 @@ export default function ApplicationForm() {
     projectPhysicalAddress: "",
     reasonForApplying: "",
     projectValue: "",
-    // projectDuration: "",
+    projectDuration: "",
     projectDurationYears: "",
     projectDurationMonths: "",
     startDate: null,
@@ -94,13 +94,20 @@ export default function ApplicationForm() {
   //   console.log("Updated formData with user details:", formData); // Debug log
   // }, [userData]);
     useEffect(() => {
-    setFormData(prev => ({
+  setFormData(prev => {
+    if (prev.userId === userData.userId && prev.tin === userData.tin) {
+      return prev;
+    }
+    return {
       ...prev,
       userId: userData.userId,
       tin: userData.tin
-    }));
-    console.log("Updated formData with user details:", formData); // Debug log
-  }, []);
+    };
+  });
+
+  console.log("User data applied to form:", userData);
+}, [userData]);
+
 
   const handleNextStep = async () => {
   try {
@@ -209,85 +216,68 @@ const projectDetailsSchema = Yup.object().shape({
   };
 
   const handleSubmit = async (e: React.MouseEvent) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    try {
-    // Validate Project Details
-    await projectDetailsSchema.validate(projectDetails, { abortEarly: false });
-    setErrors({});
-  } catch (validationError: any) {
-    const newErrors: Record<string, string> = {};
-    validationError.inner?.forEach((err: any) => {
-      if (err.path) newErrors[err.path] = err.message;
-    });
-    setErrors(newErrors);
-    return; // stop submission if invalid
-  }
-
-  // Validate Items and Attachments
-  if (items.length === 0) {
-    setErrors({ items: "Please add at least one item." });
-    return;
-  }
-  if (attachments.length === 0) {
-    setErrors({ attachments: "Please upload at least one attachment." });
-    return;
-  }
+  console.log("Submitting form with userData:", userData);
 
   if (!userData.userId || !userData.tin) {
+    console.error("Missing user data - userId:", userData.userId, "tin:", userData.tin);
     alert("User information is missing. Please ensure you're logged in.");
     return;
   }
-  
-    console.log("Submitting form with userData:", userData); // Debug log
-    
-    if (!userData.userId || !userData.tin) {
-      console.error("Missing user data - userId:", userData.userId, "tin:", userData.tin);
-      alert("User information is missing. Please ensure you're logged in.");
-      return;
-    }
 
-    const fullFormData: ApplicationProps = {
-      ...formData,
-      projectName: projectDetails.projectName,
-      projectDescription: projectDetails.projectDescription,
-      projectDistrict: projectDetails.projectDistrict,
-      projectPhysicalAddress: projectDetails.projectPhysicalAddress,
-      reasonForApplying: projectDetails.reasonForApplying,
-      projectValue: parseFloat(projectDetails.projectValue),
+  const fullFormData: ApplicationProps = {
+    ...formData,
+    projectName: projectDetails.projectName,
+    projectDescription: projectDetails.projectDescription,
+    projectDistrict: projectDetails.projectDistrict,
+    projectPhysicalAddress: projectDetails.projectPhysicalAddress,
+    reasonForApplying: projectDetails.reasonForApplying,
+    projectValue: parseFloat(projectDetails.projectValue),
+    currency: "MWK",
+    startDate: projectDetails.startDate?.toISOString().split("T")[0] || "",
+    endDate: projectDetails.endDate?.toISOString().split("T")[0] || "",
+    attachments: attachments.map(att => ({
+      type: att.type,
+      file: typeof att.file === "string" ? att.file : (att.file?.name || "")
+    })),
+    items: items.map(item => ({
+      description: item.description,
+      hscode: item.hsCode,
+      quantity: item.quantity,
+      value: item.value,
       currency: "MWK",
-      startDate: projectDetails.startDate?.toISOString().split('T')[0] || "",
-      endDate: projectDetails.endDate?.toISOString().split('T')[0] || "",
-      attachments: attachments.map(att => ({
-        type: att.type,
-        file: typeof att.file === 'string' ? att.file : (att.file?.name || "")
-      })),
-      items: items.map(item => ({
-        description: item.description,
-        hscode: item.hsCode,
-        quantity: item.quantity,
-        value: item.value,
-        currency: "MWK",
-        dutyAmount: 200,
-        uomId: (item.unitOfMeasure ?? (item as any).uomId) as any
-      })),
-      submissionDate: new Date().toISOString(),
-      status: "Under Review",
-      userId: userData.userId,
-      tin: userData.tin,
-      applicationTypeId: Number(projectDetails.projectType) || 0
-    };
-
-    console.log("Final form data being submitted:", fullFormData); // Debug log
-  
-    try {
-      await createDraft(fullFormData);
-      router.push("/my-applications");
-      alert("Draft saved successfully!");
-    } catch (error) {
-      console.error("Error saving draft:", error);
-    }
+      dutyAmount: 200,
+      uomId: 1
+    })),
+    submissionDate: new Date().toISOString(),
+    status: "Under Review", 
+    userId: userData.userId,
+    tin: userData.tin,
+    applicationTypeId: Number(projectDetails.projectType) || 0
   };
+
+  console.log("Final form data being submitted (Submit):", fullFormData);
+
+  try {
+    await createDraft(fullFormData); // if backend uses same endpoint
+    router.push("/my-applications");
+    alert("Application submitted successfully!");
+  } catch (error: any) {
+    console.error("Error submitting application:", error);
+
+    if (error.response) {
+      console.error("Server responded with:", error.response.data);
+      alert(`Submission failed: ${JSON.stringify(error.response.data)}`);
+    } else if (error.request) {
+      console.error("No response received:", error.request);
+      alert("No response received from server.");
+    } else {
+      console.error("Unexpected error:", error.message);
+      alert(`Unexpected error: ${error.message}`);
+    }
+  }
+};
 
   const handleDraft = async (e: React.MouseEvent) => {
     e.preventDefault();

@@ -11,22 +11,21 @@ export const metadata: Metadata = {
 };
 
 interface ViewApplicationPageProps {
-  params: {
-    id: string;
-  };
+  params: Promise<{ id: string }>;
 }
 
-export default function ViewApplicationPage({ params }: ViewApplicationPageProps) {
-  if (!params?.id) {
+export default async function ViewApplicationPage({ params }: ViewApplicationPageProps) {
+  const { id } = await params;
+  if (!id) {
     notFound();
   }
 
   return (
     <div>
-      <PageBreadcrumb pageTitle={`Application #${params.id}`} />
+      <PageBreadcrumb pageTitle={`Application #${id}`} />
       
       <div className="px-6">
-        <ViewApplication id={params.id} />
+        <ViewApplication id={id} />
       </div>
     </div>
   );

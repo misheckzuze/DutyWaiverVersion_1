@@ -23,17 +23,19 @@ export default function EditApplicationForm({ id }: EditApplicationFormProps) {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [projectDetails, setProjectDetails] = useState<ProjectDetails>({
-    projectName: '',
-    projectDescription: '',
-    projectType: '',
-    projectDistrict: '',
-    projectPhysicalAddress: '',
-    reasonForApplying: '',
-    projectValue: '',
-    projectDuration: '',
-    startDate: null,
-    endDate: null,
-  });
+  projectName: '',
+  projectDescription: '',
+  projectType: '',
+  projectDistrict: '',
+  projectPhysicalAddress: '',
+  reasonForApplying: '',
+  projectValue: '',
+  projectDuration: '',
+  projectDurationYears: '',
+  projectDurationMonths: '',
+  startDate: null,
+  endDate: null,
+});
   const [items, setItems] = useState<Item[]>([]);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -51,17 +53,19 @@ export default function EditApplicationForm({ id }: EditApplicationFormProps) {
         const data = await getApplicationById(id);
         if (data) {
           setProjectDetails({
-            projectName: data.projectName,
-            projectDescription: data.projectDescription,
-            projectType: data.applicationTypeId?.toString() || '',
-            projectDistrict: data.projectDistrict,
-            projectPhysicalAddress: data.projectPhysicalAddress,
-            reasonForApplying: data.reasonForApplying,
-            projectValue: data.projectValue?.toString() || '',
-            projectDuration: data.projectDuration?.toString() || '',
-            startDate: data.startDate ? new Date(data.startDate) : null,
-            endDate: data.endDate ? new Date(data.endDate) : null,
-          });
+  projectName: data.projectName,
+  projectDescription: data.projectDescription,
+  projectType: data.applicationTypeId?.toString() || '',
+  projectDistrict: data.projectDistrict,
+  projectPhysicalAddress: data.projectPhysicalAddress,
+  reasonForApplying: data.reasonForApplying,
+  projectValue: data.projectValue?.toString() || '',
+  projectDuration: data.projectDuration?.toString() || '',
+  projectDurationYears: data.projectDurationYears?.toString() || '',
+  projectDurationMonths: data.projectDurationMonths?.toString() || '',
+  startDate: data.startDate ? new Date(data.startDate) : null,
+  endDate: data.endDate ? new Date(data.endDate) : null,
+});
           setItems(data.items || []);
           setAttachments((data.attachments || []).map((a: any, idx: number) => ({
             id: `${a.type}-${idx}`,
@@ -116,7 +120,7 @@ export default function EditApplicationForm({ id }: EditApplicationFormProps) {
         endDate: projectDetails.endDate?.toISOString().split('T')[0] || "",
         attachments: attachments.map(att => ({
           type: att.type,
-          file: att.file?.name || att.file?.toString() || ""
+          file: att.file instanceof File ? att.file.name : (att.file || "")
         })),
         items: items.map(item => ({
           description: item.description,
@@ -161,7 +165,7 @@ export default function EditApplicationForm({ id }: EditApplicationFormProps) {
         endDate: projectDetails.endDate?.toISOString().split('T')[0] || "",
         attachments: attachments.map(att => ({
           type: att.type,
-          file: att.file?.name || att.file?.toString() || ""
+          file: att.file instanceof File ? att.file.name : (att.file || "")
         })),
         items: items.map(item => ({
           description: item.description,

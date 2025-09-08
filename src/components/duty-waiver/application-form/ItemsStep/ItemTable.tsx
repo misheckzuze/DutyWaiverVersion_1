@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { Item } from '@/types/ItemModel';
 import {
   useReactTable,
   getCoreRowModel,
@@ -15,14 +16,6 @@ import {
 import { EyeCloseIcon,TrashBinIcon, ChevronLeftIcon, ChevronRightIcon, ArrowUpIcon, ArrowDownIcon } from '@/icons';
 import useApplication from '@/hooks/useApplications';
 
-interface Item {
-  id: string;
-  hsCode: string;
-  description: string;
-  quantity: number;
-  unitOfMeasure: string;
-  value: number;
-}
 
 type Props = {
   items: Item[];

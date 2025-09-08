@@ -6,6 +6,7 @@ export interface ProjectDetails {
   projectPhysicalAddress: string;
   reasonForApplying: string;
   projectValue: string;
+  projectDuration: string;
   projectDurationYears: string;
   projectDurationMonths: string;
   startDate: Date | null;

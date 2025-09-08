@@ -13,6 +13,7 @@ import ConfirmationDialog from '../ui-utils/ConfirmationDialog';
 const UsersList = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [tin, setTin] = useState<string>(''); 
   const [formData, setFormData] = useState<Omit<User, 'id' | 'createdAt'> & { password: string }>({
     firstName: '',
     lastName: '',
@@ -51,20 +52,18 @@ const UsersList = () => {
     roles: apiUser.roles,
   });
 
-  const fetchUsersByStoredTin = async () => {
-    const authData = JSON.parse(localStorage.getItem('authData') || '{}');
-    const tin = authData?.companyTIN;
-    
-    if (!tin) {
-      console.error('No TIN found in authData');
-      return;
-    }
-
-    await getUsersByTin(tin);
-  };
-
   useEffect(() => {
-    fetchUsersByStoredTin();
+    if (typeof window !== 'undefined') {
+      const authData = JSON.parse(localStorage.getItem('authData') || '{}');
+      const storedTin = authData?.companyTIN || authData?.tin || '';
+      setTin(storedTin);
+
+      if (storedTin) {
+        getUsersByTin(storedTin);
+      } else {
+        console.error('No TIN found in authData');
+      }
+    }
   }, []);
 
   const handleAdd = () => {
@@ -111,7 +110,7 @@ const UsersList = () => {
 
         if (res.success) {
           toast.success(`User ${newStatus ? 'activated' : 'deactivated'} successfully`);
-          await fetchUsersByStoredTin(); // Refresh users list
+          await getUsersByTin(tin);
         } else {
           toast.error(`Failed to ${actionText} user: ${res.message}`);
         }
@@ -153,7 +152,7 @@ const UsersList = () => {
         onSave={handleSave}
         formData={formData}
         setFormData={setFormData}
-        tin={JSON.parse(localStorage.getItem('authData') || '{}')?.tin || ''}
+        tin={tin}
         selectedUser={selectedUser}
       />
 

@@ -11,22 +11,22 @@ export const metadata: Metadata = {
 };
 
 interface EditApplicationPageProps {
-  params: {
-    id: string;
-  };
+  params: Promise<{ id: string }>;
 }
 
-export default function EditApplicationPage({ params }: EditApplicationPageProps) {
-  if (!params?.id) {
+export default async function EditApplicationPage({ params }: EditApplicationPageProps) {
+
+  const { id } = await params;
+   if (!id) {
     notFound();
   }
 
   return (
     <div>
-      <PageBreadcrumb pageTitle={`Edit Application #${params.id}`} />
+      <PageBreadcrumb pageTitle={`Edit Application #${id}`} />
       
       <div className="px-6">
-        <EditApplicationForm id={params.id} />
+        <EditApplicationForm id={id} />
       </div>
     </div>
   );

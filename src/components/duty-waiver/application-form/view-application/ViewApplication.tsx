@@ -33,6 +33,7 @@ export default function ViewApplication({ id }: ViewApplicationProps) {
     projectPhysicalAddress: '',
     reasonForApplying: '',
     projectValue: '',
+    projectDuration: '',
     projectDurationYears: '',
     projectDurationMonths: '',
     startDate: null,
@@ -69,18 +70,20 @@ export default function ViewApplication({ id }: ViewApplicationProps) {
           }
 
           setProjectDetails({
-            projectName: data.projectName,
-            projectDescription: data.projectDescription,
-            projectType: data.applicationTypeId?.toString() || '',
-            projectDistrict: data.projectDistrict,
-            projectPhysicalAddress: data.projectPhysicalAddress,
-            reasonForApplying: data.reasonForApplying,
-            projectValue: data.projectValue?.toString() || '',
-            projectDurationYears: durationYears,
-            projectDurationMonths: durationMonths,
-            startDate: data.startDate ? new Date(data.startDate) : null,
-            endDate: data.endDate ? new Date(data.endDate) : null,
-          });
+  projectName: data.projectName,
+  projectDescription: data.projectDescription,
+  projectType: data.applicationTypeId?.toString() || '',
+  projectDistrict: data.projectDistrict,
+  projectPhysicalAddress: data.projectPhysicalAddress,
+  reasonForApplying: data.reasonForApplying,
+  projectValue: data.projectValue?.toString() || '',
+  projectDuration: `${durationYears} years ${durationMonths} months`, 
+  projectDurationYears: durationYears,
+  projectDurationMonths: durationMonths,
+  startDate: data.startDate ? new Date(data.startDate) : null,
+  endDate: data.endDate ? new Date(data.endDate) : null,
+});
+
 
           setItems(data.items || []);
           // Map attachments to include stable local ids and keep file string

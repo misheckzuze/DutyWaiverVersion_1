@@ -8,7 +8,7 @@ import React, { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import Button from "@/components/ui/button/Button";
-import { RegistrationProps } from "@/types/Registration";
+//import { RegistrationProps } from "@/types/Registration";
 
 export default function SignUpForm() {
   const { register } = useAuth();
