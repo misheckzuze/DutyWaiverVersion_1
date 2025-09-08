@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -15,6 +15,7 @@ import FormCheckbox from "./FormCheckbox";
 import AddButton from "./AddButton";
 import RemoveButton from "./RemoveButton";
 import LoadingSpinner from "./LoadingSpinner";
+import useAEOProfile from '@/hooks/useAeoProfile';
 import DatePicker from "./DatePicker";
 
 const emptyAgent = { agentName: "", agentTpin: "", agentTelephoneNumber: "", agentEmailAddress: "" };
@@ -83,6 +84,90 @@ export default function AEOForm() {
     const { register, handleSubmit, watch, setValue } = methods;
     const watchDeclarations = watch("declarations");
 
+    const aeo = useAEOProfile();
+    const [existingCompanyId, setExistingCompanyId] = useState<number | null>(null);
+
+    // Normalize API response accepting camelCase or PascalCase
+    const normalizeProfile = (raw: any) => {
+        if (!raw) return null;
+        const r = raw.company || raw || {};
+        const get = (o: any, keys: string[]) => keys.reduce((acc, k) => acc ?? o?.[k], undefined);
+        const pickFirstIfArray = (v: any) => Array.isArray(v) ? (v[0] ?? {}) : (v ?? {});
+        const normalized: any = {
+            id: get(r, ['id', 'Id', 'ID']),
+            tin: get(r, ['tin', 'Tin']),
+            customsAgents: get(raw, ['customsAgents', 'CustomsAgents']) || get(r, ['customsAgents']) || [],
+            companyContacts: get(raw, ['companyContacts', 'CompanyContacts']) || get(r, ['companyContacts']) || [],
+            // API sometimes returns companyActivities as an array — take the first record
+            companyActivity: pickFirstIfArray(get(raw, ['companyActivity', 'companyActivities', 'CompanyActivity', 'CompanyActivities']) || get(r, ['companyActivity', 'companyActivities'])),
+            licenseDetails: get(raw, ['licenseDetails', 'LicenseDetails']) || get(r, ['licenseDetails']) || [],
+            exemptionItems: get(raw, ['exemptionItems', 'ExemptionItems']) || get(r, ['exemptionItems']) || [],
+            drawbackItems: get(raw, ['drawbackItems', 'DrawbackItems']) || get(r, ['drawbackItems']) || [],
+            declarations: get(raw, ['declarations', 'Declarations']) || get(r, ['declarations']) || [],
+            bankingArrangements: get(raw, ['bankingArrangements', 'BankingArrangements']) || get(r, ['bankingArrangements']) || [],
+            overseasPurchasers: get(raw, ['overseasPurchasers', 'OverseasPurchasers']) || get(r, ['overseasPurchasers']) || [],
+            overseasSuppliers: get(raw, ['overseasSuppliers', 'OverseasSuppliers']) || get(r, ['overseasSuppliers']) || [],
+            // API returns recordKeepings as an array in your sample — take first
+            recordKeepings: pickFirstIfArray(get(raw, ['recordKeepings', 'RecordKeepings']) || get(r, ['recordKeepings'])),
+        };
+        return normalized;
+    };
+
+    useEffect(() => {
+        const t = typeof window !== 'undefined' ? localStorage.getItem('Tin') : '';
+        if (!t) return;
+        let mounted = true;
+        (async () => {
+            try {
+                const resp = await aeo.get(t);
+                if (!mounted) return;
+                const profile = normalizeProfile(resp);
+                if (!profile) return;
+                console.debug('Fetched AEO profile:', resp);
+                if (profile.tin) setValue('tin', profile.tin);
+                if (profile.declarations && profile.declarations.length) setValue('declarations', profile.declarations);
+                if (profile.customsAgents) setCustomsAgents(profile.customsAgents.length ? profile.customsAgents : [{ ...emptyAgent }]);
+                if (profile.companyContacts) setCompanyContacts(profile.companyContacts.length ? profile.companyContacts : [{ ...emptyContact }]);
+                if (profile.companyActivity) setCompanyActivity(profile.companyActivity);
+                if (profile.licenseDetails) setLicenseDetails(profile.licenseDetails.length ? profile.licenseDetails : [{ ...emptyLicense }]);
+                if (profile.exemptionItems) setExemptionItems(profile.exemptionItems.length ? profile.exemptionItems : [{ ...emptyExemption }]);
+                if (profile.drawbackItems) setDrawbackItems(profile.drawbackItems.length ? profile.drawbackItems : [{ ...emptyDrawback }]);
+                if (profile.bankingArrangements) setBankingArrangements(profile.bankingArrangements.length ? profile.bankingArrangements : [{ ...emptyBank }]);
+                if (profile.overseasPurchasers) setOverseasPurchasers(profile.overseasPurchasers.length ? profile.overseasPurchasers : [{ ...emptyOverseas }]);
+                if (profile.overseasSuppliers) setOverseasSuppliers(profile.overseasSuppliers.length ? profile.overseasSuppliers : [{ ...emptySupplier }]);
+                if (profile.recordKeepings) setRecordKeepings(profile.recordKeepings);
+                // Accept id === 0 as valid existing id
+                if (profile.id !== undefined && profile.id !== null) setExistingCompanyId(profile.id);
+            } catch (err) {
+                console.debug('No existing AEO profile or failed to fetch', err);
+            }
+        })();
+        return () => { mounted = false; };
+    }, [aeo, setValue]);
+
+    // Remove server-managed fields and undefineds
+    const sanitizePayload = (p: any) => {
+        if (!p) return p;
+        const copy = JSON.parse(JSON.stringify(p));
+        const stripFields = (obj: any) => {
+            if (!obj || typeof obj !== 'object') return obj;
+            for (const k of ['createdAt', 'updatedAt', 'companyId']) {
+                if (k in obj) delete obj[k];
+            }
+            for (const key of Object.keys(obj)) {
+                if (obj[key] === undefined) delete obj[key];
+                else if (Array.isArray(obj[key])) {
+                    obj[key] = obj[key].map((it: any) => stripFields(it)).filter((it: any) => it !== null && it !== undefined);
+                } else if (typeof obj[key] === 'object') stripFields(obj[key]);
+            }
+            return obj;
+        };
+        return stripFields(copy);
+    };
+
+    // Filter out empty overseas entries
+    const filterOverseas = (arr: any[], keyName: string) => (arr || []).filter(i => i && (i[keyName] || '').toString().trim() !== '');
+
     const handleFormSubmit = async (formData: any) => {
         setIsSubmitting(true);
         setMessage(null);
@@ -97,23 +182,23 @@ export default function AEOForm() {
             drawbackItems,
             declarations: formData.declarations,
             bankingArrangements,
-            overseasPurchasers,
-            overseasSuppliers,
+            overseasPurchasers: filterOverseas(overseasPurchasers, 'purchaserName'),
+            overseasSuppliers: filterOverseas(overseasSuppliers, 'supplierName'),
             recordKeepings,
         };
 
         try {
-            const res = await fetch("/aeo/applications/full", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
-            });
-            if (!res.ok) throw new Error(`Server responded ${res.status}`);
-            const data = await res.json();
-            setMessage("Application submitted successfully.");
-            console.log("AEO submission response:", data);
-            // Optionally reset form
-            // resetForm();
+            const sanitized = sanitizePayload(payload);
+            let data: any;
+            if (existingCompanyId) {
+                data = await aeo.update(existingCompanyId, sanitized);
+                setMessage('Company profile updated.');
+            } else {
+                data = await aeo.create(sanitized);
+                setMessage('Company profile created.');
+            }
+            console.log('AEO profile response:', data);
+            if (data && data.id) setExistingCompanyId(data.id);
         } catch (err: any) {
             console.error(err);
             setMessage(`Submission failed: ${err?.message || err}`);
@@ -132,6 +217,15 @@ export default function AEOForm() {
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
                     <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">AEO Application</h1>
                     <p className="text-gray-600 dark:text-gray-300">Advanced Economic Operator Registration Form</p>
+                    {/* Debug: show fetched state for verification */}
+                    <div className="mt-4">
+                        <details className="text-sm text-gray-500">
+                            <summary className="cursor-pointer">Debug: fetched profile state (click to expand)</summary>
+                            <pre className="whitespace-pre-wrap bg-gray-100 dark:bg-gray-700 p-3 rounded mt-2 text-xs text-gray-700 dark:text-gray-200">
+{JSON.stringify({ existingCompanyId, tin: methods.getValues('tin'), customsAgents, companyContacts, companyActivity, licenseDetails, exemptionItems, drawbackItems, declarations: methods.getValues('declarations'), bankingArrangements, overseasPurchasers, overseasSuppliers, recordKeepings }, null, 2)}
+                            </pre>
+                        </details>
+                    </div>
                 </div>
 
                 {/* TIN Field */}
