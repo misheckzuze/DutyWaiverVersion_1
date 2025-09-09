@@ -1,4 +1,3 @@
-"use client";
 import { useCallback } from "react";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ? process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, '') : '';

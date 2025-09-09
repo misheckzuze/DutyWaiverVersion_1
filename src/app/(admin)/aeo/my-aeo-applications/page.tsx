@@ -1,13 +1,20 @@
 import React from "react";
-import PageBreadCrumb from "@/components/common/PageBreadCrumb";
+import PageBreadcrumb from "@/components/common/PageBreadCrumb";
+import { Metadata } from "next";
+import AEOApplicationList from "@/components/aeo/applications/AEOApplicationList";
 
-export default function MyAeoApplications() {
+export const metadata: Metadata = {
+  title: "AEO Applications | Duty Waiver System",
+  description: "View and manage your submitted duty AEO applications.",
+  keywords: "AEO, Applications List, Dashboard",
+};
+
+export default function DutyWaiverApplicationsPage() {
   return (
     <div>
-  <PageBreadCrumb pageTitle="My AEO Applications" />
-      <div className="p-6 bg-white dark:bg-gray-800 rounded-lg shadow">
-        <h3 className="text-lg font-medium text-gray-800 dark:text-white">My AEO Applications</h3>
-        <p className="text-sm text-gray-500 mt-2">Sample listing page for AEO applications.</p>
+      <PageBreadcrumb pageTitle="AEO Applications" />
+      <div className="px-6">
+        <AEOApplicationList />
       </div>
     </div>
   );
