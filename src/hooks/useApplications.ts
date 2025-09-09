@@ -56,6 +56,28 @@ export default function useApplication() {
         }
     };
 
+const getApplicationsByUser = async () => {
+  setIsLoading(true);
+  setError(null);
+
+  try {
+    const authData = JSON.parse(localStorage.getItem('authData') || '{}');
+    const userId = authData?.userId;
+
+    if (!userId) throw new Error('User ID not found.');
+
+    const response = await axios.get(`/api/v1/applications/user/${userId}`);
+    setApplications(response.data.data);
+    return response.data.data;
+  } catch (error: any) {
+    setError(error.response?.data?.message || error.message || 'Failed to retrieve applications');
+    throw error;
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+
     const getApplicationsByTIN = async () => {
         setIsLoading(true);
         setError(null);
