@@ -65,7 +65,7 @@ const ApplicationsList = () => {
       // Here you would call an API to cancel the application
       toast.success("Application cancelled successfully");
       // Refresh the applications list
-      getApplicationsByTIN();
+     getApplicationsByTIN();
     });
     setShowConfirmDialog(true);
   };

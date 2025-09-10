@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://e48f-137-115-7-178.ngrok-free.app";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://eservices.mra.mw/ws/DutyWaiverTestAPI";
 console.log("Base URL:", BASE_URL); // Debug: Check which URL is being used
 
 // Create base axios instance
