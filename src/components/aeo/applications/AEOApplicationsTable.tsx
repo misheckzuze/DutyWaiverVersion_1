@@ -121,7 +121,7 @@ export const AEOApplicationsTable: React.FC<Props> = ({
             className="font-medium text-blue-600 hover:text-blue-800 hover:underline"
             title="View application"
           >
-            #{row.original.id}
+            Ref: #{row.original.id}
           </button>
         ),
       },
