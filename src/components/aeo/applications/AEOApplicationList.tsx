@@ -82,7 +82,7 @@ const AEOApplicationList: React.FC = () => {
   };
 
   const handleView = (id: string) => {
-    router.push(`/view-application/${id}`);
+    router.push(`/aeo/application/${id}`);
     toast.info("Loading application details...");
   };
 

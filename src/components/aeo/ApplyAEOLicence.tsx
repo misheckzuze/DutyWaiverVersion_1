@@ -1,11 +1,13 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import useAEOApplication from '@/hooks/useAEOApplication';
 import FormInput from './FormInput';
 import FormSelect from './FormSelect';
 import AddButton from './AddButton';
 import RemoveButton from './RemoveButton';
 import LoadingSpinner from './LoadingSpinner';
+import DocumentUpload from './DocumentUpload';
+import DatePicker from './DatePicker';
 
 function fileMeta(file: File) {
     return {
@@ -19,31 +21,120 @@ function fileMeta(file: File) {
 export default function ApplyAEOLicence() {
     const api = useAEOApplication();
     const [attachmentTypes, setAttachmentTypes] = useState<any[]>([]);
-    const [entries, setEntries] = useState<Array<any>>([{ attachmentId: null, file: null, meta: null }]);
+    const [uploadedDocuments, setUploadedDocuments] = useState<Map<number, number>>(new Map()); // attachmentId -> attachmentRecordId
     const [tin, setTin] = useState(() => typeof window !== 'undefined' ? localStorage.getItem('Tin') || '' : '');
     const [reason, setReason] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState<string | null>(null);
+    const [messageType, setMessageType] = useState<'success' | 'error' | 'info'>('info');
+    const [errors, setErrors] = useState<{[key: string]: string}>({});
     const [declarations, setDeclarations] = useState([{
         name: '',
         designation: '',
         place: '',
         signedDate: ''
     }]);
+    const hasLoadedRef = useRef(false);
+
+    const loadAttachmentTypes = useCallback(async () => {
+        if (hasLoadedRef.current) return;
+        
+        try {
+            setIsLoading(true);
+            setMessage(null);
+            console.log('Loading attachment types...');
+            const response = await api.getAttachmentTypes();
+            console.log('Attachment types response:', response);
+            
+            // Handle different response formats
+            let types = [];
+            if (Array.isArray(response)) {
+                types = response;
+            } else if (response && Array.isArray(response.data)) {
+                types = response.data;
+            } else if (response && response.data) {
+                types = response.data;
+            } else if (response && response.success && Array.isArray(response.data)) {
+                types = response.data;
+            } else {
+                console.warn('Unexpected response format:', response);
+                types = [];
+            }
+            
+            console.log('Processed attachment types:', types);
+            setAttachmentTypes(types);
+            hasLoadedRef.current = true;
+        } catch (err: any) {
+            console.error('Failed to load attachment types', err);
+            setMessage('Failed to load attachment types. Please refresh the page.');
+            setMessageType('error');
+            setAttachmentTypes([]); // Ensure we set empty array on error
+            hasLoadedRef.current = true; // Mark as loaded even on error
+        } finally {
+            setIsLoading(false);
+        }
+    }, [api.getAttachmentTypes]);
 
     useEffect(() => {
-        (async () => {
-            try {
-                const types = await api.getAttachmentTypes();
-                setAttachmentTypes(types || []);
-            } catch (err) {
-                console.debug('Failed to load attachment types', err);
-            }
-        })();
-    }, [api]);
+        loadAttachmentTypes();
+    }, [loadAttachmentTypes]);
 
-    const addEntry = () => setEntries(s => [...s, { attachmentId: null, file: null, meta: null }]);
-    const removeEntry = (i: number) => setEntries(s => s.filter((_, idx) => idx !== i));
+    // Validation functions
+    const validateForm = () => {
+        const newErrors: {[key: string]: string} = {};
+
+        // Validate TIN
+        if (!tin.trim()) {
+            newErrors.tin = 'TIN is required';
+        }
+
+        // Validate reason
+        if (!reason.trim()) {
+            newErrors.reason = 'Application reason is required';
+        } else if (reason.trim().length < 10) {
+            newErrors.reason = 'Application reason must be at least 10 characters';
+        }
+
+        // Validate declarations
+        declarations.forEach((decl, index) => {
+            if (!decl.name.trim()) {
+                newErrors[`declaration_${index}_name`] = 'Declarant name is required';
+            }
+            if (!decl.designation.trim()) {
+                newErrors[`declaration_${index}_designation`] = 'Declarant capacity is required';
+            }
+            if (!decl.place.trim()) {
+                newErrors[`declaration_${index}_place`] = 'Place is required';
+            }
+            if (!decl.signedDate) {
+                newErrors[`declaration_${index}_signedDate`] = 'Signed date is required';
+            } else {
+                const selectedDate = new Date(decl.signedDate);
+                const today = new Date();
+                if (selectedDate > today) {
+                    newErrors[`declaration_${index}_signedDate`] = 'Signed date cannot be in the future';
+                }
+            }
+        });
+
+        // Validate documents - all attachment types must have uploaded documents
+        if (attachmentTypes.length > 0) {
+            attachmentTypes.forEach((attachmentType) => {
+                if (!uploadedDocuments.has(attachmentType.id)) {
+                    newErrors[`document_${attachmentType.id}`] = `${attachmentType.name} is required`;
+                }
+            });
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+    const clearMessage = () => {
+        setMessage(null);
+        setMessageType('info');
+    };
 
     const addDeclaration = () => {
         setDeclarations(s => [...s, { name: '', designation: '', place: '', signedDate: '' }]);
@@ -63,46 +154,69 @@ export default function ApplyAEOLicence() {
         });
     };
 
-    const onFileChange = (i: number, f?: File) => {
-        setEntries(s => { const copy = [...s]; copy[i] = { ...copy[i], file: f ?? null, meta: f ? fileMeta(f) : null }; return copy; });
+    const handleDocumentUpload = (attachmentId: number, attachmentRecordId: number) => {
+        setUploadedDocuments(prev => new Map(prev).set(attachmentId, attachmentRecordId));
+        // Clear document error when successfully uploaded
+        setErrors(prev => {
+            const newErrors = { ...prev };
+            delete newErrors[`document_${attachmentId}`];
+            return newErrors;
+        });
     };
 
-    const uploadOne = async (entry: any) => {
-        if (!entry.file) return null;
-        const res = await api.uploadAttachment(entry.file, entry.attachmentId ?? undefined);
-        // map response to expected attachment payload
-        return {
-            attachmentId: res.id ?? entry.attachmentId ?? null,
-            fileName: entry.meta?.fileName ?? entry.file.name,
-            fileUrl: res.url || res.fileUrl || res.filePath || '',
-            contentType: entry.meta?.contentType,
-            size: entry.meta?.size,
-        };
+    const handleDocumentUploadError = (error: string) => {
+        setMessage(`Upload error: ${error}`);
+        setMessageType('error');
     };
 
     const handleSubmit = async () => {
-        setIsSubmitting(true);
+        // Clear previous errors and messages
+        setErrors({});
         setMessage(null);
+        
+        // Validate form
+        if (!validateForm()) {
+            setMessage('Please fix the errors below before submitting.');
+            setMessageType('error');
+            return;
+        }
+
+        setIsSubmitting(true);
         try {
-            const uploaded: any[] = [];
-            for (const e of entries) {
-                if (!e.file) continue;
-                const u = await uploadOne(e);
-                if (u) uploaded.push(u);
-            }
+            // Convert uploaded documents to the required format
+            const attachments = Array.from(uploadedDocuments.entries()).map(([attachmentId, applicationAttachmentId]) => ({
+                attachmentId,
+                applicationAttachmentId
+            }));
 
             const payload: any = {
                 tin,
-                attachments: uploaded,
-                declarations
+                applicationReason: reason,
+                attachments,
+                declarations: declarations.map(decl => ({
+                    isConfirmed: true,
+                    declarantFullName: decl.name,
+                    declarantCapacity: decl.designation,
+                    declarationDate: decl.signedDate
+                }))
             };
-            if (reason) payload.reason = reason;
 
             const res = await api.createApplication(payload);
-            setMessage('Application submitted successfully!');
+            setMessage('Application submitted successfully! You will receive a confirmation email shortly.');
+            setMessageType('success');
             console.debug('Application response', res);
+            
+            // Reset form after successful submission
+            setTimeout(() => {
+                setReason('');
+                setDeclarations([{ name: '', designation: '', place: '', signedDate: '' }]);
+                setUploadedDocuments(new Map());
+                setMessage(null);
+            }, 3000);
         } catch (err: any) {
-            setMessage(`Failed: ${err?.message || err}`);
+            setMessage(`Failed to submit application: ${err?.message || 'Unknown error occurred'}`);
+            setMessageType('error');
+            console.error('Application submission error:', err);
         } finally {
             setIsSubmitting(false);
         }
@@ -167,13 +281,20 @@ export default function ApplyAEOLicence() {
 
                 {/* TIN and Reason Section */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
                     <FormInput
-                        label="Company TIN"
+                            label="Company TIN *"
                         value={tin}
                         disabled
                         onChange={(e: any) => setTin(e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white ${
+                                errors.tin ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'
+                            }`}
                     />
+                        {errors.tin && (
+                            <p className="text-sm text-red-600 dark:text-red-400">{errors.tin}</p>
+                        )}
+                    </div>
 
                     <div className="space-y-2">
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -181,11 +302,25 @@ export default function ApplyAEOLicence() {
                         </label>
                         <textarea
                             value={reason}
-                            onChange={(e) => setReason(e.target.value)}
+                            onChange={(e) => {
+                                setReason(e.target.value);
+                                if (errors.reason) {
+                                    setErrors(prev => {
+                                        const newErrors = { ...prev };
+                                        delete newErrors.reason;
+                                        return newErrors;
+                                    });
+                                }
+                            }}
                             rows={4}
-                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white ${
+                                errors.reason ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'
+                            }`}
                             placeholder="Please provide a detailed reason for applying for AEO Licence..."
                         />
+                        {errors.reason && (
+                            <p className="text-sm text-red-600 dark:text-red-400">{errors.reason}</p>
+                        )}
                     </div>
                 </div>
 
@@ -221,10 +356,24 @@ export default function ApplyAEOLicence() {
                                     <input
                                         type="text"
                                         value={decl.name}
-                                        onChange={(e) => updateDeclaration(i, 'name', e.target.value)}
-                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:text-white"
+                                        onChange={(e) => {
+                                            updateDeclaration(i, 'name', e.target.value);
+                                            if (errors[`declaration_${i}_name`]) {
+                                                setErrors(prev => {
+                                                    const newErrors = { ...prev };
+                                                    delete newErrors[`declaration_${i}_name`];
+                                                    return newErrors;
+                                                });
+                                            }
+                                        }}
+                                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:text-white ${
+                                            errors[`declaration_${i}_name`] ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'
+                                        }`}
                                         placeholder="Full name"
                                     />
+                                    {errors[`declaration_${i}_name`] && (
+                                        <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errors[`declaration_${i}_name`]}</p>
+                                    )}
                                 </div>
 
                                 <div>
@@ -234,10 +383,24 @@ export default function ApplyAEOLicence() {
                                     <input
                                         type="text"
                                         value={decl.designation}
-                                        onChange={(e) => updateDeclaration(i, 'designation', e.target.value)}
-                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:text-white"
+                                        onChange={(e) => {
+                                            updateDeclaration(i, 'designation', e.target.value);
+                                            if (errors[`declaration_${i}_designation`]) {
+                                                setErrors(prev => {
+                                                    const newErrors = { ...prev };
+                                                    delete newErrors[`declaration_${i}_designation`];
+                                                    return newErrors;
+                                                });
+                                            }
+                                        }}
+                                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:text-white ${
+                                            errors[`declaration_${i}_designation`] ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'
+                                        }`}
                                         placeholder="Job title/position"
                                     />
+                                    {errors[`declaration_${i}_designation`] && (
+                                        <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errors[`declaration_${i}_designation`]}</p>
+                                    )}
                                 </div>
 
                                 <div>
@@ -247,22 +410,50 @@ export default function ApplyAEOLicence() {
                                     <input
                                         type="text"
                                         value={decl.place}
-                                        onChange={(e) => updateDeclaration(i, 'place', e.target.value)}
-                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:text-white"
+                                        onChange={(e) => {
+                                            updateDeclaration(i, 'place', e.target.value);
+                                            if (errors[`declaration_${i}_place`]) {
+                                                setErrors(prev => {
+                                                    const newErrors = { ...prev };
+                                                    delete newErrors[`declaration_${i}_place`];
+                                                    return newErrors;
+                                                });
+                                            }
+                                        }}
+                                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:text-white ${
+                                            errors[`declaration_${i}_place`] ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'
+                                        }`}
                                         placeholder="City, Country"
                                     />
+                                    {errors[`declaration_${i}_place`] && (
+                                        <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errors[`declaration_${i}_place`]}</p>
+                                    )}
                                 </div>
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                         Signed Date *
                                     </label>
-                                    <input
-                                        type="date"
+                                    <DatePicker
                                         value={decl.signedDate}
-                                        onChange={(e) => updateDeclaration(i, 'signedDate', e.target.value)}
-                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:text-white"
+                                        onChange={(e) => {
+                                            updateDeclaration(i, 'signedDate', e.target.value);
+                                            if (errors[`declaration_${i}_signedDate`]) {
+                                                setErrors(prev => {
+                                                    const newErrors = { ...prev };
+                                                    delete newErrors[`declaration_${i}_signedDate`];
+                                                    return newErrors;
+                                                });
+                                            }
+                                        }}
+                                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:text-white cursor-pointer ${
+                                            errors[`declaration_${i}_signedDate`] ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'
+                                        }`}
+                                        max={new Date().toISOString().split('T')[0]}
                                     />
+                                    {errors[`declaration_${i}_signedDate`] && (
+                                        <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errors[`declaration_${i}_signedDate`]}</p>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -281,82 +472,87 @@ export default function ApplyAEOLicence() {
 
                 {/* Attachments Section */}
                 <div className="space-y-4 border-t border-gray-200 dark:border-gray-700 pt-6">
-                    <h3 className="font-medium text-gray-700 dark:text-gray-300">Required Attachments</h3>
+                    <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                        </svg>
+                        Required Attachments *
+                    </h3>
 
-                    {entries.map((ent, i) => (
-                        <div key={i} className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg grid grid-cols-12 gap-4 items-center">
-                            <div className="col-span-12 md:col-span-4">
-                                <FormSelect
-                                    label="Document Type"
-                                    value={ent.attachmentId ?? ''}
-                                    onChange={(e: any) => setEntries(s => {
-                                        const c = [...s];
-                                        c[i].attachmentId = e.target.value ? Number(e.target.value) : null;
-                                        return c;
-                                    })}
-                                    options={[
-                                        // { value: '', label: 'Select document type' },
-                                        ...attachmentTypes.map((t: any) => ({ value: t.id, label: t.name }))
-                                    ]}
-                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:text-white"
-                                />
+                    {isLoading ? (
+                        <div className="flex items-center justify-center py-8">
+                            <LoadingSpinner />
+                            <span className="ml-2 text-gray-600 dark:text-gray-400">Loading attachment types...</span>
                             </div>
-
-                            <div className="col-span-12 md:col-span-6">
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    Upload File
-                                </label>
-                                <div className="flex items-center">
-                                    <label className="flex flex-col items-center px-4 py-2 bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-300 rounded-lg border border-dashed border-gray-300 dark:border-gray-500 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-500">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                                        </svg>
-                                        <span className="mt-1 text-xs">Choose file</span>
-                                        <input
-                                            type="file"
-                                            onChange={(e) => onFileChange(i, e.target.files?.[0])}
-                                            className="hidden"
-                                        />
-                                    </label>
-
-                                    {ent.meta && (
-                                        <div className="ml-3 text-xs text-gray-600 dark:text-gray-300">
-                                            <div className="font-medium truncate max-w-xs">{ent.meta.fileName}</div>
-                                            <div>{ent.meta.contentType} — {ent.meta.sizeMB} MB</div>
-                                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {attachmentTypes.map((attachmentType: any) => (
+                                <div key={attachmentType.id} className="space-y-2">
+                                    <DocumentUpload
+                                        attachmentId={attachmentType.id}
+                                        attachmentName={attachmentType.name}
+                                        onUploadComplete={(attachmentRecordId) => handleDocumentUpload(attachmentType.id, attachmentRecordId)}
+                                        onUploadError={handleDocumentUploadError}
+                                        disabled={isSubmitting}
+                                        required={true}
+                                    />
+                                    {errors[`document_${attachmentType.id}`] && (
+                                        <p className="text-sm text-red-600 dark:text-red-400">{errors[`document_${attachmentType.id}`]}</p>
                                     )}
                                 </div>
-                            </div>
-
-                            <div className="col-span-12 md:col-span-2 flex justify-end">
-                                <RemoveButton onClick={() => removeEntry(i)} />
-                            </div>
+                            ))}
                         </div>
-                    ))}
+                    )}
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center gap-2">
-                        <AddButton onClick={addEntry} text="Add another attachment" />
-                    </div>
+                <div className="flex flex-col sm:flex-row justify-end items-center gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
 
                     <div className="flex flex-col items-end gap-2">
                         {message && (
-                            <div className={`text-sm px-4 py-2 rounded-lg ${message.includes('Failed') ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'}`}>
+                            <div className={`text-sm px-4 py-2 rounded-lg flex items-center ${
+                                messageType === 'error' 
+                                    ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 border border-red-200 dark:border-red-800' 
+                                    : messageType === 'success'
+                                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 border border-green-200 dark:border-green-800'
+                                    : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
+                            }`}>
+                                {messageType === 'error' && (
+                                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                )}
+                                {messageType === 'success' && (
+                                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                )}
+                                {messageType === 'info' && (
+                                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                )}
                                 {message}
+                                <button
+                                    onClick={clearMessage}
+                                    className="ml-2 text-current hover:opacity-70"
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
                             </div>
                         )}
 
                         <button
                             onClick={handleSubmit}
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || isLoading}
                             className="flex items-center px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
                         >
                             {isSubmitting ? (
                                 <>
                                     <LoadingSpinner />
-                                    <span className="ml-2">Submitting...</span>
+                                    <span className="ml-2">Submitting Application...</span>
                                 </>
                             ) : (
                                 <>

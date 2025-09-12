@@ -30,7 +30,7 @@ export default function AuthLayout({
                   />
                 </Link>
                 <p className="text-center  text-gray-200 dark:text-white/60">
-                Welcome to the Duty Waiver System – a secure platform for submitting, processing, and tracking duty waiver applications efficiently.
+                Welcome to the MRA Customs Self Service Portal – a secure platform for submitting, processing, and tracking customs applications efficiently.
                 </p>
               </div>
             </div>

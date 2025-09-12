@@ -256,14 +256,14 @@ export default function AEOForm() {
                     <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">AEO Application</h1>
                     <p className="text-gray-600 dark:text-gray-300">Advanced Economic Operator Registration Form</p>
                     {/* Debug: show fetched state for verification */}
-                    <div className="mt-4">
+                    {/* <div className="mt-4">
                         <details className="text-sm text-gray-500">
                             <summary className="cursor-pointer">Debug: fetched profile state (click to expand)</summary>
                             <pre className="whitespace-pre-wrap bg-gray-100 dark:bg-gray-700 p-3 rounded mt-2 text-xs text-gray-700 dark:text-gray-200">
 {JSON.stringify({ existingCompanyId, tin: methods.getValues('tin'), customsAgents, companyContacts, companyActivity, licenseDetails, exemptionItems, drawbackItems, declarations: methods.getValues('declarations'), bankingArrangements, overseasPurchasers, overseasSuppliers, recordKeepings }, null, 2)}
                             </pre>
                         </details>
-                    </div>
+                    </div> */}
                 </div>
 
                 {/* TIN Field */}
@@ -646,7 +646,7 @@ export default function AEOForm() {
                 </section>
                 
                 {/* Declarations */}
-                <section className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+                {/* <section className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
                     <div className="flex items-center justify-between mb-4">
                         <SectionHeader title="Declarations" />
                         <AddButton 
@@ -677,7 +677,7 @@ export default function AEOForm() {
                             </div>
                         ))}
                     </div>
-                </section>
+                </section> */}
                 
                 {/* Submit Section */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 flex items-center justify-between">

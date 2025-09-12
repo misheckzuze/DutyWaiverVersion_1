@@ -69,11 +69,22 @@ export async function getAllAEOApplications() {
   return res.json();
 }
 
+export async function getAEOApplicationById(id: number) {
+  const url = apiUrl(`/aeo/applications/${id}`);
+  const res = await fetch(url, { headers: authHeaders() });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Failed to fetch AEO application: ${res.status} ${text}`);
+  }
+  return res.json();
+}
+
 export default function useAEOApplication() {
   return {
     getAttachmentTypes: useCallback(() => getAttachmentTypes(), []),
     uploadAttachment: useCallback((file: File, id?: number) => uploadAttachment(file, id), []),
     createApplication: useCallback((payload: any) => createApplication(payload), []),
     getAllAEOApplications: useCallback(() => getAllAEOApplications(), []),
+    getAEOApplicationById: useCallback((id: number) => getAEOApplicationById(id), []),
   };
 }
