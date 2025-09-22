@@ -224,9 +224,34 @@ export default function ApplyAEOLicence() {
 
     // Function to handle document downloads
     const downloadDocument = (docName: string) => {
-        // In a real implementation, this would fetch the document from an API
-        console.log(`Downloading ${docName}`);
-        alert(`Download functionality would fetch: ${docName}`);
+        let fileName = '';
+        let filePath = '';
+        
+        // Map document names to actual file paths
+        switch (docName) {
+            case 'AEO Application Form':
+                fileName = 'AEO Application and self assessment form.-2.docx';
+                filePath = '/documents/AEO Application and self assessment form.-2.docx';
+                break;
+            case 'Security Questionnaire':
+                fileName = 'COMPLIANCE CHECKLIST.docx';
+                filePath = '/documents/COMPLIANCE CHECKLIST.docx';
+                break;
+            default:
+                console.error('Unknown document:', docName);
+                return;
+        }
+        
+        // Create a temporary anchor element to trigger download
+        const link = document.createElement('a');
+        link.href = filePath;
+        link.download = fileName;
+        link.target = '_blank';
+        
+        // Append to body, click, and remove
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
 
     return (

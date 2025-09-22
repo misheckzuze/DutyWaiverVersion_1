@@ -28,13 +28,13 @@ const emptyDeclaration = { isConfirmed: false, declarantFullName: "", declarantC
 const emptyBank = { usesMalawiBankingSystem: true, bankName: "", bankBranch: "", bankAccountNo: "" };
 const emptyOverseas = { purchaserName: "", country: "" };
 const emptySupplier = { supplierName: "", country: "" };
-const emptyRecord = { documentsRecordsKept: true, keptInHardCopy: false, keptMicrofilmed: false, keptComputerised: true, usesAccountingSystemLedger: true, usesHardCopyLedger: false, usesComputerisedLedger: true };
+const emptyRecord = { documentsRecordsKept: false, keptInHardCopy: false, keptMicrofilmed: false, keptComputerised: false, usesAccountingSystemLedger: false, usesHardCopyLedger: false, usesComputerisedLedger: false };
 
 export default function AEOForm() {
     const [customsAgents, setCustomsAgents] = useState([{ ...emptyAgent }]);
     const [companyContacts, setCompanyContacts] = useState([{ ...emptyContact }]);
     const companyActivityTemplate = {
-        isImporter: true,
+        isImporter: false,
         isExporter: false,
         isManufacturer: false,
         isProcessor: false,
@@ -49,7 +49,7 @@ export default function AEOForm() {
     const [companyActivity, setCompanyActivity] = useState({ ...companyActivityTemplate });
 
      const recordKeepingsTemplate = {
-        documentsRecordsKept: true,
+        documentsRecordsKept: false,
         keptInHardCopy: false,
         keptMicrofilmed: false,
         keptComputerised: false,
