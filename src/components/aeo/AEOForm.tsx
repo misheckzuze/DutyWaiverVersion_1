@@ -17,14 +17,15 @@ import RemoveButton from "./RemoveButton";
 import LoadingSpinner from "./LoadingSpinner";
 import useAEOProfile from '@/hooks/useAeoProfile';
 import DatePicker from "./DatePicker";
+import { validateAgentCode, validateTPIN, validateHSCode, validateEmail } from '@/lib/agentValidation';
 
-const emptyAgent = { agentName: "", agentTpin: "", agentTelephoneNumber: "", agentEmailAddress: "" };
+const emptyAgent = { agentCode: "", agentName: "", agentTpin: "", agentTelephoneNumber: "", agentEmailAddress: "" };
 const emptyContact = { contactType: "Primary", title: "", firstName: "", familyName: "", positionTitle: "", emailAddress: "", directTelephoneNumber: "", mobileTelephoneNumber: "" };
 const emptyLicense = { licenseType: "", approvedOperations: "" };
 const emptyExemption = { cpccode: "", description: "" };
 const emptyDrawback = { hscode: "", description: "" };
 const emptyDeclaration = { isConfirmed: false, declarantFullName: "", declarantCapacity: "", signatureImage: "", declarationDate: new Date().toISOString() };
-const emptyBank = { usesMalawiBankingSystem: true, bankNameBranch: "", bankAccountNo: "" };
+const emptyBank = { usesMalawiBankingSystem: true, bankName: "", bankBranch: "", bankAccountNo: "" };
 const emptyOverseas = { purchaserName: "", country: "" };
 const emptySupplier = { supplierName: "", country: "" };
 const emptyRecord = { documentsRecordsKept: true, keptInHardCopy: false, keptMicrofilmed: false, keptComputerised: true, usesAccountingSystemLedger: true, usesHardCopyLedger: false, usesComputerisedLedger: true };
@@ -65,6 +66,8 @@ export default function AEOForm() {
     const [overseasSuppliers, setOverseasSuppliers] = useState([{ supplierName: "", country: "" }]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [message, setMessage] = useState<string | null>(null);
+    const [agentValidationLoading, setAgentValidationLoading] = useState<{[key: number]: boolean}>({});
+    const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
 
     const schema = z.object({
         tin: z.string().min(1, "TIN is required"),
@@ -206,13 +209,10 @@ export default function AEOForm() {
         setMessage(null);
 
         const payload = {
-            company: {
-                ...companyInfo,
-                tin: formData.tin,
-            },
+            tin: formData.tin,
             customsAgents,
             companyContacts,
-            companyActivities: [companyActivity],
+            companyActivity,
             licenseDetails,
             exemptionItems,
             drawbackItems,
@@ -249,12 +249,108 @@ export default function AEOForm() {
     const addItem = (setter: any, template: any) => setter((s: any[]) => [...s, { ...template }]);
     const removeItem = (setter: any, index: number) => setter((s: any[]) => s.filter((_: any, i: number) => i !== index));
 
+    // Validation functions
+    const validateAgentCodeField = async (agentCode: string, index: number) => {
+        if (!agentCode.trim()) return;
+        
+        setAgentValidationLoading(prev => ({ ...prev, [index]: true }));
+        setValidationErrors(prev => ({ ...prev, [`agent_${index}_code`]: '' }));
+        
+        try {
+            const result = await validateAgentCode(agentCode);
+            if (result.success && result.data) {
+                setCustomsAgents(prev => {
+                    const updated = [...prev];
+                    updated[index] = {
+                        ...updated[index],
+                        agentName: result.data!.agentName,
+                        agentTpin: result.data!.agentTpin || updated[index].agentTpin,
+                        agentTelephoneNumber: result.data!.agentTelephoneNumber || updated[index].agentTelephoneNumber,
+                        agentEmailAddress: result.data!.agentEmailAddress || updated[index].agentEmailAddress
+                    };
+                    return updated;
+                });
+            } else {
+                setValidationErrors(prev => ({ 
+                    ...prev, 
+                    [`agent_${index}_code`]: result.message || 'Invalid agent code' 
+                }));
+            }
+        } catch (error) {
+            setValidationErrors(prev => ({ 
+                ...prev, 
+                [`agent_${index}_code`]: 'Failed to validate agent code' 
+            }));
+        } finally {
+            setAgentValidationLoading(prev => ({ ...prev, [index]: false }));
+        }
+    };
+
+    const validateTPINField = (tpin: string, index: number) => {
+        if (tpin && !validateTPIN(tpin)) {
+            setValidationErrors(prev => ({ 
+                ...prev, 
+                [`agent_${index}_tpin`]: 'TPIN must be exactly 8 digits' 
+            }));
+        } else {
+            setValidationErrors(prev => {
+                const newErrors = { ...prev };
+                delete newErrors[`agent_${index}_tpin`];
+                return newErrors;
+            });
+        }
+    };
+
+    const validateHSCodeField = (hscode: string, index: number) => {
+        if (hscode && !validateHSCode(hscode)) {
+            setValidationErrors(prev => ({ 
+                ...prev, 
+                [`drawback_${index}_hscode`]: 'HS Code must be exactly 8 digits' 
+            }));
+        } else {
+            setValidationErrors(prev => {
+                const newErrors = { ...prev };
+                delete newErrors[`drawback_${index}_hscode`];
+                return newErrors;
+            });
+        }
+    };
+
+    const validateEmailField = (email: string, index: number, type: 'agent' | 'contact') => {
+        if (email && !validateEmail(email)) {
+            setValidationErrors(prev => ({ 
+                ...prev, 
+                [`${type}_${index}_email`]: 'Please enter a valid email address' 
+            }));
+        } else {
+            setValidationErrors(prev => {
+                const newErrors = { ...prev };
+                delete newErrors[`${type}_${index}_email`];
+                return newErrors;
+            });
+        }
+    };
+
     return (
         <FormProvider {...methods}>
             <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6 max-w-6xl mx-auto p-4">
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
-                    <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">AEO Application</h1>
-                    <p className="text-gray-600 dark:text-gray-300">Advanced Economic Operator Registration Form</p>
+                <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-xl p-8 mb-8 text-white">
+                    <div className="flex items-center space-x-4 mb-4">
+                        <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h1 className="text-3xl font-bold">AEO Company Profile</h1>
+                            <p className="text-blue-100">Advanced Economic Operator Registration & Management</p>
+                        </div>
+                    </div>
+                    <div className="bg-white/10 rounded-lg p-4">
+                        <p className="text-sm text-blue-100">
+                            Complete your company profile to maintain your AEO status. All fields marked with * are required.
+                        </p>
+                    </div>
                     {/* Debug: show fetched state for verification */}
                     {/* <div className="mt-4">
                         <details className="text-sm text-gray-500">
@@ -266,10 +362,20 @@ export default function AEOForm() {
                     </div> */}
                 </div>
 
-                {/* TIN Field */}
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
-                    <SectionHeader title="Company Information" />
-                    <div className="grid grid-cols-12 gap-4 mt-4">
+                {/* Company Information */}
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center space-x-3 mb-6">
+                        <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center">
+                            <svg className="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Company Information</h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Your company's basic identification details</p>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-12 gap-6">
                         <div className="col-span-12 md:col-span-4">
                             <FormInput
                                 label="Company TIN"
@@ -283,12 +389,22 @@ export default function AEOForm() {
                 </div>
 
                 {/* Company Contacts */}
-                <section className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
-                    <div className="flex items-center justify-between mb-4">
-                        <SectionHeader title="Company Contacts" />
+                <section className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
+                                <svg className="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Company Contacts</h3>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Key personnel and contact information</p>
+                            </div>
+                        </div>
                         <AddButton 
                             onClick={() => addItem(setCompanyContacts, emptyContact)} 
-                            text="Add contact"
+                            text="Add Contact"
                         />
                     </div>
                     <div className="mt-3 space-y-6">
@@ -330,7 +446,16 @@ export default function AEOForm() {
                                         label="Email Address"
                                         type="email"
                                         value={c.emailAddress}
-                                        onChange={(e) => setCompanyContacts(s => { const cc = [...s]; cc[i].emailAddress = e.target.value; return cc; })}
+                                        onChange={(e) => {
+                                            setCompanyContacts(s => { 
+                                                const cc = [...s]; 
+                                                cc[i].emailAddress = e.target.value; 
+                                                return cc; 
+                                            });
+                                            validateEmailField(e.target.value, i, 'contact');
+                                        }}
+                                        placeholder="contact@company.mw"
+                                        error={validationErrors[`contact_${i}_email`]}
                                     />
                                 </div>
                                 <div className="col-span-12 md:col-span-3 mt-2">
@@ -353,74 +478,118 @@ export default function AEOForm() {
                 </section>
 
                 {/* Company Activity */}
-                <section className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
-                    <SectionHeader title="Company Activity" />
-                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <section className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center space-x-3 mb-6">
+                        <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center">
+                            <svg className="w-5 h-5 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2V6" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Company Activity</h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Select all business activities that apply to your company</p>
+                        </div>
+                    </div>
+                    <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {Object.entries(companyActivity).map(([key, value]) => (
-                            <FormCheckbox
-                                key={key}
-                                label={key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                                checked={value}
-                                onChange={(e) => setCompanyActivity(s => ({ ...s, [key]: e.target.checked }))}
-                            />
+                            <div key={key} className="flex items-center space-x-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+                                <FormCheckbox
+                                    label={key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                                    checked={value}
+                                    onChange={(e) => setCompanyActivity(s => ({ ...s, [key]: e.target.checked }))}
+                                />
+                            </div>
                         ))}
                     </div>
                 </section>
 
                 {/* Record Keepings */}
-                <section className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
-                    <SectionHeader title="Company Record Keeping" />
-                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <section className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center space-x-3 mb-6">
+                        <div className="w-10 h-10 bg-teal-100 dark:bg-teal-900 rounded-lg flex items-center justify-center">
+                            <svg className="w-5 h-5 text-teal-600 dark:text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Record Keeping</h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">How your company maintains business records</p>
+                        </div>
+                    </div>
+                    <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {Object.entries(recordKeepings).map(([key, value]) => (
-                            <FormCheckbox
-                                key={key}
-                                label={key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                                checked={value}
-                                onChange={(e) => setRecordKeepings(s => ({ ...s, [key]: e.target.checked }))}
-                            />
+                            <div key={key} className="flex items-center space-x-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+                                <FormCheckbox
+                                    label={key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                                    checked={value}
+                                    onChange={(e) => setRecordKeepings(s => ({ ...s, [key]: e.target.checked }))}
+                                />
+                            </div>
                         ))}
                     </div>
                 </section>
 
                 {/* Banking Arrangements */}
-                <section className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
-                    <div className="flex items-center justify-between mb-4">
-                        <SectionHeader title="Banking Arrangements" />
+                <section className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+                                <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Banking Arrangements</h3>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Provide your banking information for customs transactions</p>
+                            </div>
+                        </div>
                         <AddButton 
                             onClick={() => addItem(setBankingArrangements, emptyBank)} 
-                            text="Add bank"
+                            text="Add Bank Account"
                         />
                     </div>
-                    <div className="mt-3 space-y-6">
+                    <div className="mt-6 space-y-6">
                         {bankingArrangements.map((b, i) => (
-                            <div key={i} className="grid grid-cols-12 gap-4 items-end p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                                <div className="col-span-12 md:col-span-5">
-                                    <FormInput
-                                        label="Bank Branch"
-                                        value={b.bankNameBranch}
-                                        onChange={(e) => setBankingArrangements(s => { const c = [...s]; c[i].bankNameBranch = e.target.value; return c; })}
-                                    />
-                                </div>
-                                <div className="col-span-12 md:col-span-4">
-                                    <FormInput
-                                        label="Account No"
-                                        value={b.bankAccountNo}
-                                        onChange={(e) => setBankingArrangements(s => { const c = [...s]; c[i].bankAccountNo = e.target.value; return c; })}
-                                    />
-                                </div>
-                                <div className="col-span-12 md:col-span-2">
-                                    <FormSelect
-                                        label="Uses Malawi Banking"
-                                        value={String(b.usesMalawiBankingSystem)}
-                                        onChange={(e) => setBankingArrangements(s => { const c = [...s]; c[i].usesMalawiBankingSystem = e.target.value === 'true'; return c; })}
-                                        options={[
-                                            { value: "true", label: "Yes" },
-                                            { value: "false", label: "No" }
-                                        ]}
-                                    />
-                                </div>
-                                <div className="col-span-12 md:col-span-1 flex justify-end">
+                            <div key={i} className="relative p-6 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-xl border border-gray-200 dark:border-gray-600 shadow-sm">
+                                <div className="absolute top-4 right-4">
                                     <RemoveButton onClick={() => removeItem(setBankingArrangements, i)} />
+                                </div>
+                                <div className="grid grid-cols-12 gap-6">
+                                    <div className="col-span-12 md:col-span-4">
+                                        <FormInput
+                                            label="Bank Name"
+                                            value={b.bankName}
+                                            onChange={(e) => setBankingArrangements(s => { const c = [...s]; c[i].bankName = e.target.value; return c; })}
+                                            placeholder="e.g., National Bank of Malawi"
+                                        />
+                                    </div>
+                                    <div className="col-span-12 md:col-span-4">
+                                        <FormInput
+                                            label="Bank Branch"
+                                            value={b.bankBranch}
+                                            onChange={(e) => setBankingArrangements(s => { const c = [...s]; c[i].bankBranch = e.target.value; return c; })}
+                                            placeholder="e.g., Blantyre Branch"
+                                        />
+                                    </div>
+                                    <div className="col-span-12 md:col-span-3">
+                                        <FormInput
+                                            label="Account Number"
+                                            value={b.bankAccountNo}
+                                            onChange={(e) => setBankingArrangements(s => { const c = [...s]; c[i].bankAccountNo = e.target.value; return c; })}
+                                            placeholder="123456789012"
+                                        />
+                                    </div>
+                                    <div className="col-span-12 md:col-span-1">
+                                        <FormSelect
+                                            label="Malawi Banking"
+                                            value={String(b.usesMalawiBankingSystem)}
+                                            onChange={(e) => setBankingArrangements(s => { const c = [...s]; c[i].usesMalawiBankingSystem = e.target.value === 'true'; return c; })}
+                                            options={[
+                                                { value: "true", label: "Yes" },
+                                                { value: "false", label: "No" }
+                                            ]}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         ))}
@@ -429,12 +598,22 @@ export default function AEOForm() {
 
                 {/* Overseas Purchasers & Suppliers */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <section className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
-                        <div className="flex items-center justify-between mb-4">
-                            <SectionHeader title="Overseas Purchasers" />
+                    <section className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center space-x-3">
+                                <div className="w-10 h-10 bg-red-100 dark:bg-red-900 rounded-lg flex items-center justify-center">
+                                    <svg className="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Overseas Purchasers</h3>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">International buyers of your products</p>
+                                </div>
+                            </div>
                             <AddButton 
                                 onClick={() => addItem(setOverseasPurchasers, { ...emptyOverseas })} 
-                                text="Add purchaser"
+                                text="Add Purchaser"
                             />
                         </div>
                         <div className="mt-3 space-y-4">
@@ -463,12 +642,22 @@ export default function AEOForm() {
                         </div>
                     </section>
 
-                    <section className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
-                        <div className="flex items-center justify-between mb-4">
-                            <SectionHeader title="Overseas Suppliers" />
+                    <section className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center space-x-3">
+                                <div className="w-10 h-10 bg-yellow-100 dark:bg-yellow-900 rounded-lg flex items-center justify-center">
+                                    <svg className="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Overseas Suppliers</h3>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">International suppliers of your materials</p>
+                                </div>
+                            </div>
                             <AddButton 
                                 onClick={() => addItem(setOverseasSuppliers, { ...emptySupplier })} 
-                                text="Add supplier"
+                                text="Add Supplier"
                             />
                         </div>
                         <div className="mt-3 space-y-4">
@@ -499,12 +688,22 @@ export default function AEOForm() {
                 </div>
 
                 {/* License Details & exemption/drawback */}
-                <section className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 space-y-6">
-                    <div className="flex items-center justify-between mb-4">
-                        <SectionHeader title="License Details" />
+                <section className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-200 dark:border-gray-700 space-y-8">
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900 rounded-lg flex items-center justify-center">
+                                <svg className="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">License Details</h3>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Business licenses and approved operations</p>
+                            </div>
+                        </div>
                         <AddButton 
                             onClick={() => addItem(setLicenseDetails, emptyLicense)} 
-                            text="Add license"
+                            text="Add License"
                         />
                     </div>
                     {licenseDetails.map((l, i) => (
@@ -529,12 +728,22 @@ export default function AEOForm() {
                         </div>
                     ))}
 
-                    <div className="pt-4">
-                        <div className="flex items-center justify-between mb-4">
-                            <SectionHeader title="Exemption Items" />
+                    <div className="pt-6 border-t border-gray-200 dark:border-gray-600">
+                        <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center space-x-3">
+                                <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+                                    <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Exemption Items</h4>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">Items eligible for duty exemptions</p>
+                                </div>
+                            </div>
                             <AddButton 
                                 onClick={() => addItem(setExemptionItems, emptyExemption)} 
-                                text="Add exemption"
+                                text="Add Exemption"
                             />
                         </div>
                         <div className="mt-2 space-y-4">
@@ -562,12 +771,22 @@ export default function AEOForm() {
                         </div>
                     </div>
 
-                    <div>
-                        <div className="flex items-center justify-between mb-4">
-                            <SectionHeader title="Drawback Items" />
+                    <div className="pt-6 border-t border-gray-200 dark:border-gray-600">
+                        <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center space-x-3">
+                                <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
+                                    <svg className="w-4 h-4 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Drawback Items</h4>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">Items eligible for duty drawbacks</p>
+                                </div>
+                            </div>
                             <AddButton 
                                 onClick={() => addItem(setDrawbackItems, emptyDrawback)} 
-                                text="Add drawback"
+                                text="Add Drawback"
                             />
                         </div>
                         <div className="mt-2 space-y-4">
@@ -577,7 +796,17 @@ export default function AEOForm() {
                                         <FormInput
                                             label="HS Code"
                                             value={d.hscode}
-                                            onChange={(e) => setDrawbackItems(s => { const c = [...s]; c[i].hscode = e.target.value; return c; })}
+                                            onChange={(e) => {
+                                                setDrawbackItems(s => { 
+                                                    const c = [...s]; 
+                                                    c[i].hscode = e.target.value; 
+                                                    return c; 
+                                                });
+                                                validateHSCodeField(e.target.value, i);
+                                            }}
+                                            placeholder="8 digits"
+                                            maxLength={8}
+                                            error={validationErrors[`drawback_${i}_hscode`]}
                                         />
                                     </div>
                                     <div className="col-span-12 md:col-span-8">
@@ -597,48 +826,107 @@ export default function AEOForm() {
                 </section>
 
                 {/* Customs Agents */}
-                <section className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
-                    <div className="flex items-center justify-between mb-4">
-                        <SectionHeader title="Customs Agents" />
+                <section className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                                <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Customs Agents</h3>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Add your authorized customs clearing agents</p>
+                            </div>
+                        </div>
                         <AddButton 
                             onClick={() => addItem(setCustomsAgents, emptyAgent)} 
-                            text="Add agent"
+                            text="Add Agent"
                         />
                     </div>
-                    <div className="mt-3 space-y-6">
+                    <div className="mt-6 space-y-6">
                         {customsAgents.map((a, i) => (
-                            <div key={i} className="grid grid-cols-12 gap-4 items-end p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                                <div className="col-span-12 md:col-span-3">
-                                    <FormInput
-                                        label="Agent Name"
-                                        value={a.agentName}
-                                        onChange={(e) => setCustomsAgents(s => { const c = [...s]; c[i].agentName = e.target.value; return c; })}
-                                    />
-                                </div>
-                                <div className="col-span-12 md:col-span-2">
-                                    <FormInput
-                                        label="TPIN"
-                                        value={a.agentTpin}
-                                        onChange={(e) => setCustomsAgents(s => { const c = [...s]; c[i].agentTpin = e.target.value; return c; })}
-                                    />
-                                </div>
-                                <div className="col-span-12 md:col-span-3">
-                                    <FormInput
-                                        label="Telephone"
-                                        value={a.agentTelephoneNumber}
-                                        onChange={(e) => setCustomsAgents(s => { const c = [...s]; c[i].agentTelephoneNumber = e.target.value; return c; })}
-                                    />
-                                </div>
-                                <div className="col-span-12 md:col-span-3">
-                                    <FormInput
-                                        label="Email"
-                                        type="email"
-                                        value={a.agentEmailAddress}
-                                        onChange={(e) => setCustomsAgents(s => { const c = [...s]; c[i].agentEmailAddress = e.target.value; return c; })}
-                                    />
-                                </div>
-                                <div className="col-span-12 md:col-span-1 flex justify-end">
+                            <div key={i} className="relative p-6 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 rounded-xl border border-gray-200 dark:border-gray-600 shadow-sm">
+                                <div className="absolute top-4 right-4">
                                     <RemoveButton onClick={() => removeItem(setCustomsAgents, i)} />
+                                </div>
+                                <div className="grid grid-cols-12 gap-6">
+                                    <div className="col-span-12 md:col-span-3">
+                                        <div className="relative">
+                                            <FormInput
+                                                label="Agent Code"
+                                                value={a.agentCode}
+                                                onChange={(e) => {
+                                                    setCustomsAgents(s => { 
+                                                        const c = [...s]; 
+                                                        c[i].agentCode = e.target.value; 
+                                                        return c; 
+                                                    });
+                                                    if (e.target.value.length >= 3) {
+                                                        validateAgentCodeField(e.target.value, i);
+                                                    }
+                                                }}
+                                                placeholder="e.g., CA25001"
+                                                error={validationErrors[`agent_${i}_code`]}
+                                            />
+                                            {agentValidationLoading[i] && (
+                                                <div className="absolute right-3 top-8">
+                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="col-span-12 md:col-span-4">
+                                        <FormInput
+                                            label="Agent Name"
+                                            value={a.agentName}
+                                            onChange={(e) => setCustomsAgents(s => { const c = [...s]; c[i].agentName = e.target.value; return c; })}
+                                            placeholder="Auto-populated from agent code"
+                                            disabled={!!a.agentCode}
+                                        />
+                                    </div>
+                                    <div className="col-span-12 md:col-span-2">
+                                        <FormInput
+                                            label="TPIN"
+                                            value={a.agentTpin}
+                                            onChange={(e) => {
+                                                setCustomsAgents(s => { 
+                                                    const c = [...s]; 
+                                                    c[i].agentTpin = e.target.value; 
+                                                    return c; 
+                                                });
+                                                validateTPINField(e.target.value, i);
+                                            }}
+                                            placeholder="8 digits"
+                                            maxLength={8}
+                                            error={validationErrors[`agent_${i}_tpin`]}
+                                        />
+                                    </div>
+                                    <div className="col-span-12 md:col-span-3">
+                                        <FormInput
+                                            label="Telephone"
+                                            value={a.agentTelephoneNumber}
+                                            onChange={(e) => setCustomsAgents(s => { const c = [...s]; c[i].agentTelephoneNumber = e.target.value; return c; })}
+                                            placeholder="+265..."
+                                        />
+                                    </div>
+                                    <div className="col-span-12 md:col-span-6 mt-4">
+                                        <FormInput
+                                            label="Email Address"
+                                            type="email"
+                                            value={a.agentEmailAddress}
+                                            onChange={(e) => {
+                                                setCustomsAgents(s => { 
+                                                    const c = [...s]; 
+                                                    c[i].agentEmailAddress = e.target.value; 
+                                                    return c; 
+                                                });
+                                                validateEmailField(e.target.value, i, 'agent');
+                                            }}
+                                            placeholder="agent@company.mw"
+                                            error={validationErrors[`agent_${i}_email`]}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         ))}
@@ -680,30 +968,58 @@ export default function AEOForm() {
                 </section> */}
                 
                 {/* Submit Section */}
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 flex items-center justify-between">
-                    <div>
-                        {message && (
-                            <div className={`text-sm ${message.includes("failed") ? "text-red-600" : "text-green-600"}`}>
-                                {message}
+                <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-xl shadow-lg p-8 border border-gray-200 dark:border-gray-700">
+                    <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
+                        <div className="flex items-center space-x-4">
+                            <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                                <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
                             </div>
-                        )}
+                            <div>
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Ready to Submit</h3>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                    {typeof existingCompanyId !== 'undefined' && existingCompanyId !== null
+                                        ? 'Update your company profile information'
+                                        : 'Submit your AEO application for review'
+                                    }
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex flex-col items-end space-y-2">
+                            {message && (
+                                <div className={`text-sm px-4 py-2 rounded-lg ${
+                                    message.includes("failed") 
+                                        ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300" 
+                                        : "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
+                                }`}>
+                                    {message}
+                                </div>
+                            )}
+                            <button 
+                                type="submit" 
+                                className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-semibold flex items-center justify-center min-w-[220px] transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-lg" 
+                                disabled={isSubmitting}
+                            >
+                                {isSubmitting ? (
+                                    <>
+                                        <LoadingSpinner />
+                                        <span className="ml-3">Processing...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                        </svg>
+                                        {typeof existingCompanyId !== 'undefined' && existingCompanyId !== null
+                                            ? 'Update Profile'
+                                            : 'Submit Application'
+                                        }
+                                    </>
+                                )}
+                            </button>
+                        </div>
                     </div>
-                    <button 
-                        type="submit" 
-                        className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium flex items-center justify-center min-w-[200px] transition-colors disabled:opacity-50 disabled:cursor-not-allowed" 
-                        disabled={isSubmitting}
-                    >
-                        {isSubmitting ? (
-                            <>
-                                <LoadingSpinner />
-                                <span className="ml-2">Submitting...</span>
-                            </>
-                        ) : (
-                            (typeof existingCompanyId !== 'undefined' && existingCompanyId !== null)
-                                ? 'Update Company Details'
-                                : 'Submit AEO Application'
-                        )}
-                    </button>
                 </div>
             </form>
         </FormProvider>
