@@ -16,8 +16,8 @@ import AddButton from "./AddButton";
 import RemoveButton from "./RemoveButton";
 import LoadingSpinner from "./LoadingSpinner";
 import useAEOProfile from '@/hooks/useAeoProfile';
+import useAgent from '@/hooks/useAgent';
 import DatePicker from "./DatePicker";
-import { validateAgentCode, validateTPIN, validateHSCode, validateEmail } from '@/lib/agentValidation';
 
 const emptyAgent = { agentCode: "", agentName: "", agentTpin: "", agentTelephoneNumber: "", agentEmailAddress: "" };
 const emptyContact = { contactType: "Primary", title: "", firstName: "", familyName: "", positionTitle: "", emailAddress: "", directTelephoneNumber: "", mobileTelephoneNumber: "" };
@@ -68,6 +68,7 @@ export default function AEOForm() {
     const [message, setMessage] = useState<string | null>(null);
     const [agentValidationLoading, setAgentValidationLoading] = useState<{[key: number]: boolean}>({});
     const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
+    const [validatedAgents, setValidatedAgents] = useState<{[key: number]: boolean}>({});
 
     const schema = z.object({
         tin: z.string().min(1, "TIN is required"),
@@ -90,6 +91,7 @@ export default function AEOForm() {
     const watchDeclarations = watch("declarations");
 
     const aeo = useAEOProfile();
+    const agentHook = useAgent();
     const [existingCompanyId, setExistingCompanyId] = useState<number | null>(null);
     const [companyInfo, setCompanyInfo] = useState<any>({ id: null, tin: '', tradingName: '', address: '', email: '', phonenumber: '', otp: null, deleted: false });
 
@@ -160,7 +162,16 @@ export default function AEOForm() {
                 if (profile.tin) setValue('tin', profile.tin);
                 if (profile.company) setCompanyInfo(profile.company);
                 if (profile.declarations && profile.declarations.length) setValue('declarations', profile.declarations.map(stripServerFields));
-                if (profile.customsAgents) setCustomsAgents(profile.customsAgents.length ? profile.customsAgents.map(stripServerFields) : [{ ...emptyAgent }]);
+                if (profile.customsAgents) {
+                    const agents = profile.customsAgents.length ? profile.customsAgents.map(stripServerFields) : [{ ...emptyAgent }];
+                    setCustomsAgents(agents);
+                    // Mark existing agents as already validated
+                    const validatedState: {[key: number]: boolean} = {};
+                    agents.forEach((_, index) => {
+                        validatedState[index] = true; // Existing agents are considered validated
+                    });
+                    setValidatedAgents(validatedState);
+                }
                 if (profile.companyContacts) setCompanyContacts(profile.companyContacts.length ? profile.companyContacts.map(stripServerFields) : [{ ...emptyContact }]);
                 if (profile.companyActivity) setCompanyActivity(pickFlags(profile.companyActivity, companyActivityTemplate));
                 if (profile.licenseDetails) setLicenseDetails(profile.licenseDetails.length ? profile.licenseDetails.map(stripServerFields) : [{ ...emptyLicense }]);
@@ -209,10 +220,10 @@ export default function AEOForm() {
         setMessage(null);
 
         const payload = {
-            tin: formData.tin,
+                tin: formData.tin,
             customsAgents,
             companyContacts,
-            companyActivity,
+            companyActivities: [companyActivity],
             licenseDetails,
             exemptionItems,
             drawbackItems,
@@ -222,6 +233,7 @@ export default function AEOForm() {
             overseasSuppliers: filterOverseas(overseasSuppliers, 'supplierName'),
             recordKeepings: [recordKeepings],
         };
+
 
         try {
             const sanitized = sanitizePayload(payload);
@@ -246,44 +258,93 @@ export default function AEOForm() {
     };
 
     // Small helpers for dynamic arrays
-    const addItem = (setter: any, template: any) => setter((s: any[]) => [...s, { ...template }]);
-    const removeItem = (setter: any, index: number) => setter((s: any[]) => s.filter((_: any, i: number) => i !== index));
+    const addItem = (setter: any, template: any) => {
+        setter((s: any[]) => [...s, { ...template }]);
+        // Mark new agent as not validated
+        if (setter === setCustomsAgents) {
+            const newIndex = customsAgents.length;
+            setValidatedAgents(prev => ({ ...prev, [newIndex]: false }));
+        }
+    };
+    const removeItem = (setter: any, index: number) => {
+        setter((s: any[]) => s.filter((_: any, i: number) => i !== index));
+        // Clean up validation state when removing agents
+        if (setter === setCustomsAgents) {
+            setValidatedAgents(prev => {
+                const newState = { ...prev };
+                delete newState[index];
+                return newState;
+            });
+        }
+    };
 
     // Validation functions
     const validateAgentCodeField = async (agentCode: string, index: number) => {
-        if (!agentCode.trim()) return;
+        if (!agentCode.trim()) {
+            setValidationErrors(prev => ({ 
+                ...prev, 
+                [`agent_${index}_code`]: 'Agent code is required' 
+            }));
+            return;
+        }
         
         setAgentValidationLoading(prev => ({ ...prev, [index]: true }));
         setValidationErrors(prev => ({ ...prev, [`agent_${index}_code`]: '' }));
         
         try {
-            const result = await validateAgentCode(agentCode);
+            const result = await agentHook.validateAgentCode(agentCode);
+            
             if (result.success && result.data) {
+                // Update the customs agents state
                 setCustomsAgents(prev => {
-                    const updated = [...prev];
-                    updated[index] = {
-                        ...updated[index],
-                        agentName: result.data!.agentName,
-                        agentTpin: result.data!.agentTpin || updated[index].agentTpin,
-                        agentTelephoneNumber: result.data!.agentTelephoneNumber || updated[index].agentTelephoneNumber,
-                        agentEmailAddress: result.data!.agentEmailAddress || updated[index].agentEmailAddress
+                    const newAgents = [...prev];
+                    newAgents[index] = {
+                        ...newAgents[index],
+                        agentName: result.data.name || newAgents[index].agentName,
+                        agentTpin: result.data.tin || newAgents[index].agentTpin,
+                        agentTelephoneNumber: result.data.phoneNumber || newAgents[index].agentTelephoneNumber,
+                        agentEmailAddress: newAgents[index].agentEmailAddress
                     };
-                    return updated;
+                    return newAgents;
+                });
+                
+                // Mark agent as validated
+                setValidatedAgents(prev => ({ ...prev, [index]: true }));
+                
+                // Clear any previous validation errors
+                setValidationErrors(prev => {
+                    const newErrors = { ...prev };
+                    delete newErrors[`agent_${index}_code`];
+                    return newErrors;
                 });
             } else {
                 setValidationErrors(prev => ({ 
                     ...prev, 
-                    [`agent_${index}_code`]: result.message || 'Invalid agent code' 
+                    [`agent_${index}_code`]: result.message || 'Invalid agent code. Please check and try again.' 
                 }));
             }
         } catch (error) {
             setValidationErrors(prev => ({ 
                 ...prev, 
-                [`agent_${index}_code`]: 'Failed to validate agent code' 
+                [`agent_${index}_code`]: 'Failed to validate agent code. Please try again.' 
             }));
         } finally {
             setAgentValidationLoading(prev => ({ ...prev, [index]: false }));
         }
+    };
+
+    // Validation helper functions
+    const validateTPIN = (tpin: string): boolean => {
+        return /^\d{8}$/.test(tpin);
+    };
+
+    const validateHSCode = (hscode: string): boolean => {
+        return /^\d{8}$/.test(hscode);
+    };
+
+    const validateEmail = (email: string): boolean => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
     };
 
     const validateTPINField = (tpin: string, index: number) => {
@@ -334,7 +395,7 @@ export default function AEOForm() {
     return (
         <FormProvider {...methods}>
             <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6 max-w-6xl mx-auto p-4">
-                <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-xl p-8 mb-8 text-white">
+                <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-xl shadow-xl p-8 mb-8 text-white">
                     <div className="flex items-center space-x-4 mb-4">
                         <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -343,11 +404,11 @@ export default function AEOForm() {
                         </div>
                         <div>
                             <h1 className="text-3xl font-bold">AEO Company Profile</h1>
-                            <p className="text-blue-100">Advanced Economic Operator Registration & Management</p>
+                            <p className="text-green-100">Malawi Revenue Authority - Advanced Economic Operator Registration</p>
                         </div>
                     </div>
                     <div className="bg-white/10 rounded-lg p-4">
-                        <p className="text-sm text-blue-100">
+                        <p className="text-sm text-green-100">
                             Complete your company profile to maintain your AEO status. All fields marked with * are required.
                         </p>
                     </div>
@@ -365,8 +426,8 @@ export default function AEOForm() {
                 {/* Company Information */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-200 dark:border-gray-700">
                     <div className="flex items-center space-x-3 mb-6">
-                        <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center">
-                            <svg className="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                            <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                             </svg>
                         </div>
@@ -392,8 +453,8 @@ export default function AEOForm() {
                 <section className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-200 dark:border-gray-700">
                     <div className="flex items-center justify-between mb-6">
                         <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
-                                <svg className="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                            <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                 </svg>
                             </div>
@@ -480,8 +541,8 @@ export default function AEOForm() {
                 {/* Company Activity */}
                 <section className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-200 dark:border-gray-700">
                     <div className="flex items-center space-x-3 mb-6">
-                        <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center">
-                            <svg className="w-5 h-5 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                            <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2V6" />
                             </svg>
                         </div>
@@ -493,11 +554,11 @@ export default function AEOForm() {
                     <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {Object.entries(companyActivity).map(([key, value]) => (
                             <div key={key} className="flex items-center space-x-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
-                                <FormCheckbox
-                                    label={key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                                    checked={value}
-                                    onChange={(e) => setCompanyActivity(s => ({ ...s, [key]: e.target.checked }))}
-                                />
+                            <FormCheckbox
+                                label={key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                                checked={value}
+                                onChange={(e) => setCompanyActivity(s => ({ ...s, [key]: e.target.checked }))}
+                            />
                             </div>
                         ))}
                     </div>
@@ -506,8 +567,8 @@ export default function AEOForm() {
                 {/* Record Keepings */}
                 <section className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-200 dark:border-gray-700">
                     <div className="flex items-center space-x-3 mb-6">
-                        <div className="w-10 h-10 bg-teal-100 dark:bg-teal-900 rounded-lg flex items-center justify-center">
-                            <svg className="w-5 h-5 text-teal-600 dark:text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                            <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
                         </div>
@@ -519,11 +580,11 @@ export default function AEOForm() {
                     <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {Object.entries(recordKeepings).map(([key, value]) => (
                             <div key={key} className="flex items-center space-x-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
-                                <FormCheckbox
-                                    label={key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                                    checked={value}
-                                    onChange={(e) => setRecordKeepings(s => ({ ...s, [key]: e.target.checked }))}
-                                />
+                            <FormCheckbox
+                                label={key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                                checked={value}
+                                onChange={(e) => setRecordKeepings(s => ({ ...s, [key]: e.target.checked }))}
+                            />
                             </div>
                         ))}
                     </div>
@@ -533,8 +594,8 @@ export default function AEOForm() {
                 <section className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-200 dark:border-gray-700">
                     <div className="flex items-center justify-between mb-6">
                         <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
-                                <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                            <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                                 </svg>
                             </div>
@@ -564,31 +625,34 @@ export default function AEOForm() {
                                         />
                                     </div>
                                     <div className="col-span-12 md:col-span-4">
-                                        <FormInput
-                                            label="Bank Branch"
+                                    <FormInput
+                                        label="Bank Branch"
                                             value={b.bankBranch}
                                             onChange={(e) => setBankingArrangements(s => { const c = [...s]; c[i].bankBranch = e.target.value; return c; })}
                                             placeholder="e.g., Blantyre Branch"
-                                        />
-                                    </div>
-                                    <div className="col-span-12 md:col-span-3">
-                                        <FormInput
+                                    />
+                                </div>
+                                <div className="col-span-12 md:col-span-4">
+                                    <FormInput
                                             label="Account Number"
-                                            value={b.bankAccountNo}
-                                            onChange={(e) => setBankingArrangements(s => { const c = [...s]; c[i].bankAccountNo = e.target.value; return c; })}
+                                        value={b.bankAccountNo}
+                                        onChange={(e) => setBankingArrangements(s => { const c = [...s]; c[i].bankAccountNo = e.target.value; return c; })}
                                             placeholder="123456789012"
-                                        />
-                                    </div>
-                                    <div className="col-span-12 md:col-span-1">
-                                        <FormSelect
-                                            label="Malawi Banking"
-                                            value={String(b.usesMalawiBankingSystem)}
-                                            onChange={(e) => setBankingArrangements(s => { const c = [...s]; c[i].usesMalawiBankingSystem = e.target.value === 'true'; return c; })}
-                                            options={[
-                                                { value: "true", label: "Yes" },
-                                                { value: "false", label: "No" }
-                                            ]}
-                                        />
+                                    />
+                                </div>
+                                    <div className="col-span-12 mt-4">
+                                        <div className="flex items-center space-x-3 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                                            <input
+                                                type="checkbox"
+                                                id={`malawi-banking-${i}`}
+                                                checked={b.usesMalawiBankingSystem}
+                                                onChange={(e) => setBankingArrangements(s => { const c = [...s]; c[i].usesMalawiBankingSystem = e.target.checked; return c; })}
+                                                className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 dark:focus:ring-green-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                                            />
+                                            <label htmlFor={`malawi-banking-${i}`} className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                Uses Malawi Banking System
+                                            </label>
+                                </div>
                                     </div>
                                 </div>
                             </div>
@@ -597,12 +661,12 @@ export default function AEOForm() {
                 </section>
 
                 {/* Overseas Purchasers & Suppliers */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-6">
                     <section className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-200 dark:border-gray-700">
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center space-x-3">
-                                <div className="w-10 h-10 bg-red-100 dark:bg-red-900 rounded-lg flex items-center justify-center">
-                                    <svg className="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <div className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                                    <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                                     </svg>
                                 </div>
@@ -645,8 +709,8 @@ export default function AEOForm() {
                     <section className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-200 dark:border-gray-700">
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center space-x-3">
-                                <div className="w-10 h-10 bg-yellow-100 dark:bg-yellow-900 rounded-lg flex items-center justify-center">
-                                    <svg className="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <div className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                                    <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                                     </svg>
                                 </div>
@@ -691,8 +755,8 @@ export default function AEOForm() {
                 <section className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-200 dark:border-gray-700 space-y-8">
                     <div className="flex items-center justify-between mb-6">
                         <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900 rounded-lg flex items-center justify-center">
-                                <svg className="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                            <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
                                 </svg>
                             </div>
@@ -731,8 +795,8 @@ export default function AEOForm() {
                     <div className="pt-6 border-t border-gray-200 dark:border-gray-600">
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center space-x-3">
-                                <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
-                                    <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                                    <svg className="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                                     </svg>
                                 </div>
@@ -774,12 +838,12 @@ export default function AEOForm() {
                     <div className="pt-6 border-t border-gray-200 dark:border-gray-600">
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center space-x-3">
-                                <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
-                                    <svg className="w-4 h-4 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                                    <svg className="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                                     </svg>
                                 </div>
-                                <div>
+                    <div>
                                     <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Drawback Items</h4>
                                     <p className="text-sm text-gray-500 dark:text-gray-400">Items eligible for duty drawbacks</p>
                                 </div>
@@ -846,73 +910,96 @@ export default function AEOForm() {
                     </div>
                     <div className="mt-6 space-y-6">
                         {customsAgents.map((a, i) => (
-                            <div key={i} className="relative p-6 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 rounded-xl border border-gray-200 dark:border-gray-600 shadow-sm">
+                            <div key={i} className="relative p-6 bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-xl border border-gray-200 dark:border-gray-600 shadow-sm">
                                 <div className="absolute top-4 right-4">
                                     <RemoveButton onClick={() => removeItem(setCustomsAgents, i)} />
                                 </div>
-                                <div className="grid grid-cols-12 gap-6">
-                                    <div className="col-span-12 md:col-span-3">
-                                        <div className="relative">
-                                            <FormInput
-                                                label="Agent Code"
-                                                value={a.agentCode}
-                                                onChange={(e) => {
-                                                    setCustomsAgents(s => { 
-                                                        const c = [...s]; 
-                                                        c[i].agentCode = e.target.value; 
-                                                        return c; 
-                                                    });
-                                                    if (e.target.value.length >= 3) {
-                                                        validateAgentCodeField(e.target.value, i);
-                                                    }
-                                                }}
-                                                placeholder="e.g., CA25001"
-                                                error={validationErrors[`agent_${i}_code`]}
-                                            />
-                                            {agentValidationLoading[i] && (
-                                                <div className="absolute right-3 top-8">
-                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
+                                
+                                {/* Agent Code and Validation Button */}
+                                <div className="grid grid-cols-12 gap-4 mb-4">
                                     <div className="col-span-12 md:col-span-4">
-                                        <FormInput
-                                            label="Agent Name"
-                                            value={a.agentName}
-                                            onChange={(e) => setCustomsAgents(s => { const c = [...s]; c[i].agentName = e.target.value; return c; })}
-                                            placeholder="Auto-populated from agent code"
-                                            disabled={!!a.agentCode}
-                                        />
-                                    </div>
-                                    <div className="col-span-12 md:col-span-2">
-                                        <FormInput
-                                            label="TPIN"
-                                            value={a.agentTpin}
+                                    <FormInput
+                                            label="Agent Code *"
+                                            value={a.agentCode}
                                             onChange={(e) => {
                                                 setCustomsAgents(s => { 
                                                     const c = [...s]; 
-                                                    c[i].agentTpin = e.target.value; 
+                                                    c[i].agentCode = e.target.value; 
                                                     return c; 
                                                 });
-                                                validateTPINField(e.target.value, i);
+                                                // Clear previous validation errors
+                                                setValidationErrors(prev => {
+                                                    const newErrors = { ...prev };
+                                                    delete newErrors[`agent_${i}_code`];
+                                                    return newErrors;
+                                                });
                                             }}
-                                            placeholder="8 digits"
-                                            maxLength={8}
-                                            error={validationErrors[`agent_${i}_tpin`]}
+                                            placeholder="e.g., CA25001"
+                                            error={validationErrors[`agent_${i}_code`]}
                                         />
                                     </div>
-                                    <div className="col-span-12 md:col-span-3">
-                                        <FormInput
-                                            label="Telephone"
-                                            value={a.agentTelephoneNumber}
-                                            onChange={(e) => setCustomsAgents(s => { const c = [...s]; c[i].agentTelephoneNumber = e.target.value; return c; })}
-                                            placeholder="+265..."
-                                        />
+                                    {!validatedAgents[i] && (
+                                        <div className="col-span-12 md:col-span-3 flex items-end">
+                                            <button
+                                                type="button"
+                                                onClick={() => validateAgentCodeField(a.agentCode, i)}
+                                                disabled={!a.agentCode.trim() || agentValidationLoading[i]}
+                                                className="w-full px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors flex items-center justify-center"
+                                            >
+                                                {agentValidationLoading[i] ? (
+                                                    <>
+                                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                                        Validating...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        </svg>
+                                                        Validate
+                                                    </>
+                                                )}
+                                            </button>
+                                        </div>
+                                    )}
+                                    {validatedAgents[i] && (
+                                        <div className="col-span-12 md:col-span-3 flex items-end">
+                                            <div className="w-full px-4 py-2 bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-lg font-medium flex items-center justify-center">
+                                                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                                Validated
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div className="col-span-12 md:col-span-5">
+                                        {validationErrors[`agent_${i}_code`] && (
+                                            <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                                                <div className="flex items-center">
+                                                    <svg className="w-5 h-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                    <span className="text-sm text-red-700 dark:text-red-300">{validationErrors[`agent_${i}_code`]}</span>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
-                                    <div className="col-span-12 md:col-span-6 mt-4">
+                                </div>
+
+                                {/* Agent Details */}
+                                <div className="grid grid-cols-12 gap-4">
+                                    <div className="col-span-12 md:col-span-6">
                                         <FormInput
-                                            label="Email Address"
+                                            label="Agent Name *"
+                                        value={a.agentName}
+                                        onChange={(e) => setCustomsAgents(s => { const c = [...s]; c[i].agentName = e.target.value; return c; })}
+                                            placeholder={validatedAgents[i] ? "Pre-validated agent" : "Auto-populated from agent code"}
+                                            disabled={validatedAgents[i] || !!a.agentCode}
+                                    />
+                                </div>
+                                    <div className="col-span-12 md:col-span-6">
+                                    <FormInput
+                                            label="Email Address *"
                                             type="email"
                                             value={a.agentEmailAddress}
                                             onChange={(e) => {
@@ -927,6 +1014,31 @@ export default function AEOForm() {
                                             error={validationErrors[`agent_${i}_email`]}
                                         />
                                     </div>
+                                    <div className="col-span-12 md:col-span-4">
+                                        <FormInput
+                                            label="TPIN *"
+                                        value={a.agentTpin}
+                                            onChange={(e) => {
+                                                setCustomsAgents(s => { 
+                                                    const c = [...s]; 
+                                                    c[i].agentTpin = e.target.value; 
+                                                    return c; 
+                                                });
+                                                validateTPINField(e.target.value, i);
+                                            }}
+                                            placeholder="8 digits"
+                                            maxLength={8}
+                                            error={validationErrors[`agent_${i}_tpin`]}
+                                    />
+                                </div>
+                                    <div className="col-span-12 md:col-span-8">
+                                    <FormInput
+                                            label="Telephone Number *"
+                                        value={a.agentTelephoneNumber}
+                                        onChange={(e) => setCustomsAgents(s => { const c = [...s]; c[i].agentTelephoneNumber = e.target.value; return c; })}
+                                            placeholder="+265..."
+                                    />
+                                </div>
                                 </div>
                             </div>
                         ))}
@@ -976,7 +1088,7 @@ export default function AEOForm() {
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                             </div>
-                            <div>
+                    <div>
                                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Ready to Submit</h3>
                                 <p className="text-sm text-gray-500 dark:text-gray-400">
                                     {typeof existingCompanyId !== 'undefined' && existingCompanyId !== null
@@ -987,26 +1099,26 @@ export default function AEOForm() {
                             </div>
                         </div>
                         <div className="flex flex-col items-end space-y-2">
-                            {message && (
+                        {message && (
                                 <div className={`text-sm px-4 py-2 rounded-lg ${
                                     message.includes("failed") 
                                         ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300" 
                                         : "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
                                 }`}>
-                                    {message}
-                                </div>
-                            )}
-                            <button 
-                                type="submit" 
-                                className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-semibold flex items-center justify-center min-w-[220px] transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-lg" 
-                                disabled={isSubmitting}
-                            >
-                                {isSubmitting ? (
-                                    <>
-                                        <LoadingSpinner />
+                                {message}
+                            </div>
+                        )}
+                    <button 
+                        type="submit" 
+                                className="px-8 py-4 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-xl font-semibold flex items-center justify-center min-w-[220px] transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-lg" 
+                        disabled={isSubmitting}
+                    >
+                        {isSubmitting ? (
+                            <>
+                                <LoadingSpinner />
                                         <span className="ml-3">Processing...</span>
-                                    </>
-                                ) : (
+                            </>
+                        ) : (
                                     <>
                                         <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
@@ -1016,8 +1128,8 @@ export default function AEOForm() {
                                             : 'Submit Application'
                                         }
                                     </>
-                                )}
-                            </button>
+                        )}
+                    </button>
                         </div>
                     </div>
                 </div>

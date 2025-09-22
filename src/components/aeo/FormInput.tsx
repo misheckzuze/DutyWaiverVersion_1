@@ -12,7 +12,7 @@ export default function FormInput({ label, error, ...props }: FormInputProps) {
                 {label}
             </label>
             <input
-                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white transition-colors ${
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:bg-gray-700 dark:text-white transition-colors ${
                     error 
                         ? 'border-red-300 focus:ring-red-500 focus:border-red-500 dark:border-red-600' 
                         : 'border-gray-300 dark:border-gray-600'
