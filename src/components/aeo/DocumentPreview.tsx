@@ -7,6 +7,7 @@ interface DocumentPreviewProps {
   contentType: string;
   size: number;
   className?: string;
+  attachmentName?: string;
 }
 
 export default function DocumentPreview({
@@ -14,7 +15,8 @@ export default function DocumentPreview({
   fileUrl,
   contentType,
   size,
-  className = ""
+  className = "",
+  attachmentName
 }: DocumentPreviewProps) {
   const [showPreview, setShowPreview] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -77,10 +79,10 @@ export default function DocumentPreview({
         {getFileIcon()}
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-            {fileName}
+            {attachmentName || 'Document'}
           </p>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            {formatFileSize(size)} • {contentType}
+            {formatFileSize(size)} • PDF
           </p>
         </div>
         <div className="flex space-x-2">

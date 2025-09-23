@@ -56,27 +56,24 @@ const AEOApplicationList: React.FC = () => {
     }
   };
 
-  const handleEdit = (id: string) => {
+  const handleUpdate = (id: string) => {
     setSelectedApplicationId(id);
-    setConfirmMessage("Are you sure you want to edit this application?");
+    setConfirmMessage("Are you sure you want to update this application?");
     setConfirmType("info");
     setConfirmAction(() => () => {
-      router.push(`/edit-application/${id}`);
-      toast.info("Editing application...");
+      router.push(`/aeo/application/${id}/edit`);
+      toast.info("Updating application...");
     });
     setShowConfirmDialog(true);
   };
 
-  const handleCancel = (id: string) => {
+  const handleRespondToQuery = (id: string) => {
     setSelectedApplicationId(id);
-    setConfirmMessage(
-      "Are you sure you want to cancel this application? This action cannot be undone."
-    );
-    setConfirmType("danger");
+    setConfirmMessage("Are you sure you want to respond to this query?");
+    setConfirmType("info");
     setConfirmAction(() => () => {
-      // TODO: call cancel endpoint when ready
-      toast.success("Application cancelled successfully");
-      refresh();
+      router.push(`/aeo/application/${id}/respond`);
+      toast.info("Responding to query...");
     });
     setShowConfirmDialog(true);
   };
@@ -88,16 +85,40 @@ const AEOApplicationList: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">My AEO Applications</h1>
+      {/* Header Section */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-2">
+              My AEO Applications
+            </h1>
+            <p className="text-gray-600 dark:text-gray-300">
+              Track and manage your AEO license applications
+            </p>
+          </div>
+          <div className="flex items-center space-x-4">
+            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+              <div className="flex items-center">
+                <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+                <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                  {apps.length} Total Applications
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {isLoading ? (
-        <Loader />
+        <div className="flex items-center justify-center py-12">
+          <Loader />
+        </div>
       ) : (
         <>
           <AEOApplicationsTable
             applications={apps}
-            onSubmit={handleEdit}
-            onCancel={handleCancel}
+            onUpdate={handleUpdate}
+            onRespondToQuery={handleRespondToQuery}
             onView={handleView}
           />
 

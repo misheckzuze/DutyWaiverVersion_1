@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   keywords: "AEO, Applications List, Dashboard",
 };
 
-export default function DutyWaiverApplicationsPage() {
+export default function AEOApplicationsPage() {
   return (
     <div>
       <PageBreadcrumb pageTitle="AEO Applications" />
@@ -19,3 +19,4 @@ export default function DutyWaiverApplicationsPage() {
     </div>
   );
 }
+

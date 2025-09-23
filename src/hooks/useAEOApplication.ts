@@ -79,6 +79,40 @@ export async function getAEOApplicationById(id: number) {
   return res.json();
 }
 
+/** Get AEO application statistics by TIN */
+export async function getAEOApplicationStats(tin?: string) {
+  if (typeof window === 'undefined') {
+    throw new Error('getAEOApplicationStats must be called in the browser.');
+  }
+  const t = tin ?? localStorage.getItem('Tin');
+  if (!t) throw new Error('TIN not found in localStorage under key "Tin".');
+
+  const url = apiUrl(`/aeo/applications/stats/${encodeURIComponent(t)}`);
+  const res = await fetch(url, { headers: authHeaders() });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Failed to fetch AEO application stats: ${res.status} ${text}`);
+  }
+  return res.json();
+}
+
+/** Get recent AEO applications by TIN */
+export async function getRecentAEOApplications(tin?: string) {
+  if (typeof window === 'undefined') {
+    throw new Error('getRecentAEOApplications must be called in the browser.');
+  }
+  const t = tin ?? localStorage.getItem('Tin');
+  if (!t) throw new Error('TIN not found in localStorage under key "Tin".');
+
+  const url = apiUrl(`/aeo/applications/recent/${encodeURIComponent(t)}`);
+  const res = await fetch(url, { headers: authHeaders() });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Failed to fetch recent AEO applications: ${res.status} ${text}`);
+  }
+  return res.json();
+}
+
 export default function useAEOApplication() {
   return {
     getAttachmentTypes: useCallback(() => getAttachmentTypes(), []),
@@ -86,5 +120,7 @@ export default function useAEOApplication() {
     createApplication: useCallback((payload: any) => createApplication(payload), []),
     getAllAEOApplications: useCallback(() => getAllAEOApplications(), []),
     getAEOApplicationById: useCallback((id: number) => getAEOApplicationById(id), []),
+    getAEOApplicationStats: useCallback((tin?: string) => getAEOApplicationStats(tin), []),
+    getRecentAEOApplications: useCallback((tin?: string) => getRecentAEOApplications(tin), []),
   };
 }

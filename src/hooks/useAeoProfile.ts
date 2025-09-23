@@ -40,10 +40,27 @@ export async function updateProfile(id: number | string, payload: any) {
   return res.json();
 }
 
+export async function checkProfileCompletion(tin?: string) {
+  if (typeof window === 'undefined') {
+    throw new Error('checkProfileCompletion must be called in the browser.');
+  }
+  const t = tin ?? localStorage.getItem('Tin');
+  if (!t) throw new Error('TIN not found in localStorage under key "Tin".');
+
+  const url = BASE ? `${BASE}/aeo/company/profile/check/${encodeURIComponent(t)}` : `/aeo/company/profile/check/${encodeURIComponent(t)}`;
+  const res = await fetch(url, { headers: authHeaders() });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Failed to check profile completion: ${res.status} ${text}`);
+  }
+  return res.json();
+}
+
 // Lightweight hook-style wrapper for convenience
 export default function useAEOProfile() {
   const get = useCallback((tin?: string) => getProfileByTin(tin), []);
   const create = useCallback((payload: any) => createProfile(payload), []);
   const update = useCallback((id: number | string, payload: any) => updateProfile(id, payload), []);
-  return { get, create, update };
+  const checkCompletion = useCallback((tin?: string) => checkProfileCompletion(tin), []);
+  return { get, create, update, checkCompletion };
 }

@@ -44,7 +44,7 @@ const navItems: NavItem[] = [
           { name: "Dashboard", path: "/aeo" },
           { name: "Company Profile", path: "/aeo/aeo-profile" },
           { name: "Apply AEO Licence", path: "/aeo/apply-licence" },
-          { name: "My Applications", path: "/aeo/my-aeo-applications" },
+          { name: "My Applications", path: "/aeo/applications" },
           // { name: "Reports", path: "/aeo/reports" },
         ],
       },

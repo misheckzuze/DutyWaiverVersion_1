@@ -249,6 +249,11 @@ export default function AEOForm() {
             }
             console.log('AEO profile response:', data);
             if (data && data.id) setExistingCompanyId(data.id);
+            
+            // Refresh the page after successful profile creation/update
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
         } catch (err: any) {
             console.error(err);
             setMessage(`Submission failed: ${err?.message || err}`);

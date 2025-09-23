@@ -206,13 +206,10 @@ export default function ApplyAEOLicence() {
             setMessageType('success');
             console.debug('Application response', res);
             
-            // Reset form after successful submission
+            // Redirect to applications list after successful submission
             setTimeout(() => {
-                setReason('');
-                setDeclarations([{ name: '', designation: '', place: '', signedDate: '' }]);
-                setUploadedDocuments(new Map());
-                setMessage(null);
-            }, 3000);
+                window.location.href = '/aeo/applications';
+            }, 2000);
         } catch (err: any) {
             setMessage(`Failed to submit application: ${err?.message || 'Unknown error occurred'}`);
             setMessageType('error');
