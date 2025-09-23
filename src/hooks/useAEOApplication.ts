@@ -14,7 +14,7 @@ function apiUrl(path: string) {
 }
 
 export async function getAttachmentTypes() {
-  const url = apiUrl(`/aeo/attachments`);
+  const url = apiUrl(`/aeo/attachments/type/1`);
   const res = await fetch(url, { headers: authHeaders() });
   if (!res.ok) {
     const text = await res.text().catch(() => '');

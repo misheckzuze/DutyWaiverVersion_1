@@ -11,6 +11,7 @@ import { countries } from "@/lib/countries";
 import SectionHeader from "./SectionHeader";
 import FormInput from "./FormInput";
 import FormSelect from "./FormSelect";
+import CountrySelect from "./CountrySelect";
 import FormCheckbox from "./FormCheckbox";
 import AddButton from "./AddButton";
 import RemoveButton from "./RemoveButton";
@@ -695,14 +696,14 @@ export default function AEOForm() {
                                             onChange={(e) => setOverseasPurchasers(s => { const c = [...s]; c[i].purchaserName = e.target.value; return c; })}
                                         />
                                     </div>
-                                    <div className="col-span-12 md:col-span-5">
-                                        <FormSelect
-                                            label="Country"
-                                            value={p.country}
-                                            onChange={(e) => setOverseasPurchasers(s => { const c = [...s]; c[i].country = e.target.value; return c; })}
-                                            options={countries}
-                                        />
-                                    </div>
+                                     <div className="col-span-12 md:col-span-5">
+                                         <CountrySelect
+                                             label="Country"
+                                             value={p.country}
+                                             onChange={(e) => setOverseasPurchasers(s => { const c = [...s]; c[i].country = e.target.value; return c; })}
+                                             options={countries}
+                                         />
+                                     </div>
                                     <div className="col-span-12 md:col-span-2 flex justify-end">
                                         <RemoveButton onClick={() => removeItem(setOverseasPurchasers, i)} />
                                     </div>
@@ -739,14 +740,14 @@ export default function AEOForm() {
                                             onChange={(e) => setOverseasSuppliers(ss => { const c = [...ss]; c[i].supplierName = e.target.value; return c; })}
                                         />
                                     </div>
-                                    <div className="col-span-12 md:col-span-5">
-                                        <FormSelect
-                                            label="Country"
-                                            value={s.country}
-                                            onChange={(e) => setOverseasSuppliers(ss => { const c = [...ss]; c[i].country = e.target.value; return c; })}
-                                            options={countries}
-                                        />
-                                    </div>
+                                     <div className="col-span-12 md:col-span-5">
+                                         <CountrySelect
+                                             label="Country"
+                                             value={s.country}
+                                             onChange={(e) => setOverseasSuppliers(ss => { const c = [...ss]; c[i].country = e.target.value; return c; })}
+                                             options={countries}
+                                         />
+                                     </div>
                                     <div className="col-span-12 md:col-span-2 flex justify-end">
                                         <RemoveButton onClick={() => removeItem(setOverseasSuppliers, i)} />
                                     </div>
