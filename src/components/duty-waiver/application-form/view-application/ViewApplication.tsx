@@ -65,26 +65,31 @@ export default function ViewApplication({ id }: ViewApplicationProps) {
           }
 
           setProjectDetails({
-  projectName: data.projectName,
-  projectDescription: data.projectDescription,
-  projectType: data.applicationTypeId?.toString() || '',
-  projectDistrict: data.projectDistrict,
-  projectPhysicalAddress: data.projectPhysicalAddress,
-  reasonForApplying: data.reasonForApplying,
-  projectValue: data.projectValue?.toString() || '',
-  projectDuration: `${durationYears} years ${durationMonths} months`, 
-  projectDurationYears: durationYears,
-  projectDurationMonths: durationMonths,
-  startDate: data.startDate ? new Date(data.startDate) : null,
-  endDate: data.endDate ? new Date(data.endDate) : null,
-});
+            projectName: data.projectName,
+            projectDescription: data.projectDescription,
+            projectType: data.applicationTypeId?.toString() || '',
+            projectDistrict: data.projectDistrict,
+            projectPhysicalAddress: data.projectPhysicalAddress,
+            reasonForApplying: data.reasonForApplying,
+            projectValue: data.projectValue?.toString() || '',
+            projectDuration: `${durationYears} years ${durationMonths} months`,
+            projectDurationYears: durationYears,
+            projectDurationMonths: durationMonths,
+            startDate: data.startDate ? new Date(data.startDate) : null,
+            endDate: data.endDate ? new Date(data.endDate) : null,
+          });
 
 
-          setItems(data.items || []);
+          // Transform items to ensure unitOfMeasure is populated
+          const transformedItems = (data.items || []).map((item: any) => ({
+            ...item,
+            unitOfMeasure: item.uom?.code || item.unitOfMeasure || '', // Use uom.code if available
+          }));
+          setItems(transformedItems);
           // Map attachments to our local shape with view link
           setAttachments((data.attachments || []).map((a: any, idx: number) => ({
             id: String(a.id ?? idx),
-            type: String(a.attachmentType?.id ?? ''),
+            type: String(a.attachmentType?.name ?? a.attachmentType?.id ?? ''),
             file: a.fileName || null,
             relativePath: a.fileUrl || undefined,
             attachmentId: a.id,

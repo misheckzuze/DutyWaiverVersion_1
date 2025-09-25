@@ -65,7 +65,7 @@ export const ViewAttachments: React.FC<ViewAttachmentsProps> = ({ attachments })
               </div>
               <div className="flex-1 min-w-0">
                 <h4 className="text-sm font-medium text-gray-800 truncate">
-                  Document Type: {attachment.type || 'Unknown'}
+                  {attachment.type || 'Unknown'}
                 </h4>
                 <p className="text-xs text-gray-500 mt-1">
                   {getFileTypeFromContentType(attachment.contentType || '')}

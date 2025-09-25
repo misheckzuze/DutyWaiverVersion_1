@@ -73,7 +73,12 @@ export default function EditApplicationForm({ id }: EditApplicationFormProps) {
             startDate: data.startDate ? new Date(data.startDate) : null,
             endDate: data.endDate ? new Date(data.endDate) : null,
           });
-          setItems(data.items || []);
+          // Transform items to ensure unitOfMeasure is populated
+          const transformedItems = (data.items || []).map((item: any) => ({
+            ...item,
+            unitOfMeasure: item.uom?.code || item.unitOfMeasure || '', // Use uom.code if available
+          }));
+          setItems(transformedItems);
           setAttachments((data.attachments || []).map((a: any, idx: number) => ({
             id: String(a.id ?? idx),
             type: String(a.attachmentType?.id ?? ''),

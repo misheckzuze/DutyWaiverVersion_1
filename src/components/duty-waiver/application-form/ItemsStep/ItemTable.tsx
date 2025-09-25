@@ -29,6 +29,7 @@ const ItemTable = ({ items, editItem, deleteItem, calculateTotalValue }: Props) 
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState('');
   const [uomMap, setUomMap] = useState<Record<string, string>>({});
+  const [uomMapLoaded, setUomMapLoaded] = useState(false);
   const { getUnitOfMeasure } = useApplication();
 
   useEffect(() => {
@@ -41,7 +42,11 @@ const ItemTable = ({ items, editItem, deleteItem, calculateTotalValue }: Props) 
           if (u.id != null) map[String(u.id)] = u.code;
         });
         setUomMap(map);
-      } catch {}
+        setUomMapLoaded(true);
+      } catch (error) {
+        console.error('Failed to load UOMs:', error);
+        setUomMapLoaded(true); // Still set to true to avoid infinite loading
+      }
     };
     loadUoms();
   }, [getUnitOfMeasure]);
@@ -67,12 +72,25 @@ const ItemTable = ({ items, editItem, deleteItem, calculateTotalValue }: Props) 
         accessorKey: 'unitOfMeasure',
         header: 'Unit',
         cell: info => {
-          // Prefer unitOfMeasure (code) if present, else fall back to uomId from original row
-          const rawFromAccessor = info.getValue() as string | number | undefined;
-          const rawFromRow = (info.row && (info.row.original as any)?.uomId) as string | number | undefined;
-          const raw = rawFromAccessor ?? rawFromRow ?? '';
-          const label = uomMap[String(raw)] || String(raw);
-          return <span className="text-gray-600">{label}</span>;
+          const item = info.row.original as Item;
+          
+          // First try to get the unitOfMeasure (code) directly
+          if (item.unitOfMeasure) {
+            return <span className="text-gray-600">{item.unitOfMeasure}</span>;
+          }
+          // If not available, try to resolve from uomId using the map
+          if (item.uomId) {
+            const resolvedCode = uomMap[String(item.uomId)];
+            if (resolvedCode) {
+              return <span className="text-gray-600">{resolvedCode}</span>;
+            }
+          }
+          // If uom object is available, use its code
+          if (item.uom?.code) {
+            return <span className="text-gray-600">{item.uom.code}</span>;
+          }
+          // Fallback to showing the raw value
+          return <span className="text-gray-600">{String(item.uomId || item.unitOfMeasure || 'N/A')}</span>;
         }
       },
       {
@@ -107,7 +125,7 @@ const ItemTable = ({ items, editItem, deleteItem, calculateTotalValue }: Props) 
         ),
       },
     ],
-    [editItem, deleteItem]
+    [editItem, deleteItem, uomMap]
   );
 
   const table = useReactTable({
@@ -126,6 +144,19 @@ const ItemTable = ({ items, editItem, deleteItem, calculateTotalValue }: Props) 
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });
+
+  if (!uomMapLoaded) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="p-8 text-center">
+          <div className="inline-flex items-center gap-2 text-gray-500">
+            <div className="h-4 w-4 border-2 border-gray-300 border-t-transparent rounded-full animate-spin"></div>
+            Loading unit of measures...
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
