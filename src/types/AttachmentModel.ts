@@ -8,4 +8,6 @@ export interface Attachment {
   relativePath?: string;
   uploaded?: boolean;
   progress?: number;
+  size?: number;
+  contentType?: string;
 }

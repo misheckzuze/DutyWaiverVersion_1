@@ -66,6 +66,8 @@ export const AttachmentItem: React.FC<AttachmentItemProps> = ({
 
   const attachmentTypeOption = attachmentTypeOptions.find(opt => String(opt.value) === String(attachment.type));
   const attachmementTypeLabel = attachmentTypeOption ? attachmentTypeOption.label : String(attachment.type);
+  const baseUrl = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
+  const viewUrl = attachment.relativePath ? `${baseUrl}${attachment.relativePath}` : undefined;
 
   return (
     <div className="border rounded-lg p-4">
@@ -77,6 +79,16 @@ export const AttachmentItem: React.FC<AttachmentItemProps> = ({
           )}
         </div>
         <div className="flex gap-2">
+          {viewUrl && (
+            <a
+              href={viewUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-1 text-sm text-blue-600 hover:underline"
+            >
+              View
+            </a>
+          )}
           <input
             type="file"
             id={`file-upload-${attachment.id}`}

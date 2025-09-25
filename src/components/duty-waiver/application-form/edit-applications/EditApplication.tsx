@@ -76,9 +76,14 @@ export default function EditApplicationForm({ id }: EditApplicationFormProps) {
           });
           setItems(data.items || []);
           setAttachments((data.attachments || []).map((a: any, idx: number) => ({
-            id: `${a.type}-${idx}`,
-            type: a.type,
-            file: a.file || null,
+            id: String(a.id ?? idx),
+            type: String(a.attachmentType?.id ?? ''),
+            file: a.fileName || null,
+            relativePath: a.fileUrl || undefined,
+            attachmentId: a.id,
+            uploaded: true,
+            size: a.size,
+            contentType: a.contentType,
           })));
         }
       } catch (err) {

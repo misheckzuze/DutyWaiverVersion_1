@@ -86,11 +86,16 @@ export default function ViewApplication({ id }: ViewApplicationProps) {
 
 
           setItems(data.items || []);
-          // Map attachments to include stable local ids and keep file string
+          // Map attachments to our local shape with view link
           setAttachments((data.attachments || []).map((a: any, idx: number) => ({
-            id: `${a.type}-${idx}`,
-            type: a.type,
-            file: a.file || null,
+            id: String(a.id ?? idx),
+            type: String(a.attachmentType?.id ?? ''),
+            file: a.fileName || null,
+            relativePath: a.fileUrl || undefined,
+            attachmentId: a.id,
+            uploaded: true,
+            size: a.size,
+            contentType: a.contentType,
           })));
 
           // Show success toast

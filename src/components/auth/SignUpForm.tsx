@@ -4,10 +4,13 @@ import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "@/icons";
 import Link from "next/link";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import Button from "@/components/ui/button/Button";
+import { useTaxpayerService } from "@/hooks/useTaxpayerService";
+import { toast } from "react-toastify";
+import 'react-toastify/dist/ReactToastify.css';
 //import { RegistrationProps } from "@/types/Registration";
 
 export default function SignUpForm() {
@@ -33,10 +36,34 @@ export default function SignUpForm() {
     password: ""
   });
 
+  const { validateTIN, isValidating, error: tinError } = useTaxpayerService();
+  const [tinValid, setTinValid] = useState(false);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
+
+  useEffect(() => {
+    const tin = formData.tin.replace(/\D/g, '');
+    if (tin.length === 8) {
+      const toastId = toast.loading('Validating TIN...');
+      (async () => {
+        const res = await validateTIN(tin);
+        if (res) {
+          setFormData(prev => ({ ...prev, tradingName: res.TradingName || res.TaxpayerName || prev.tradingName }));
+          setTinValid(true);
+          toast.update(toastId, { render: 'TIN validated', type: 'success', isLoading: false, autoClose: 2000 });
+        } else {
+          setTinValid(false);
+          toast.update(toastId, { render: tinError || 'TIN validation failed', type: 'error', isLoading: false, autoClose: 3000 });
+        }
+      })();
+    } else {
+      setTinValid(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.tin]);
 
   const validateBusinessDetails = () => {
     const { tin, tradingName, address, businessEmail, phoneNumber } = formData;
@@ -172,6 +199,7 @@ export default function SignUpForm() {
                     value={formData.tradingName}
                     onChange={handleChange}
                     placeholder="Enter your business name"
+                    disabled={!tinValid}
                   />
                   {fieldErrors.tradingName && <p className="text-red-500 text-sm">{fieldErrors.tradingName}</p>}
                 </div>
@@ -183,6 +211,7 @@ export default function SignUpForm() {
                     value={formData.address}
                     onChange={handleChange}
                     placeholder="Enter your business address"
+                    disabled={!tinValid}
                   />
                   {fieldErrors.address && <p className="text-red-500 text-sm">{fieldErrors.address}</p>}
                 </div>
@@ -194,6 +223,7 @@ export default function SignUpForm() {
                     value={formData.businessEmail}
                     onChange={handleChange}
                     placeholder="Enter your business email"
+                    disabled={!tinValid}
                   />
                   {fieldErrors.businessEmail && <p className="text-red-500 text-sm">{fieldErrors.businessEmail}</p>}
                 </div>
@@ -205,12 +235,23 @@ export default function SignUpForm() {
                     value={formData.phoneNumber}
                     onChange={handleChange}
                     placeholder="Enter your business phone number"
+                    disabled={!tinValid}
                   />
                   {fieldErrors.phoneNumber && <p className="text-red-500 text-sm">{fieldErrors.phoneNumber}</p>}
                 </div>
                 <div>
-                  <Button type="button" className="w-full" onClick={handleContinueToPersonalDetails}>
-                    Continue to Personal Details
+                  <Button
+                    type="button"
+                    className={`w-full ${(!tinValid || isValidating) ? '!bg-gray-300 cursor-not-allowed' : ''}`}
+                    onClick={handleContinueToPersonalDetails}
+                    disabled={!tinValid || isValidating}
+                  >
+                    {isValidating ? (
+                      <span className="inline-flex items-center gap-2">
+                        <span className="h-4 w-4 border-2 border-white/60 border-t-transparent rounded-full animate-spin" />
+                        Validating TIN...
+                      </span>
+                    ) : 'Continue to Personal Details'}
                   </Button>
                 </div>
               </div>
@@ -225,6 +266,7 @@ export default function SignUpForm() {
                       value={formData.firstName}
                       onChange={handleChange}
                       placeholder="Enter your first name"
+                      disabled={!tinValid}
                     />
                     {fieldErrors.firstName && <p className="text-red-500 text-sm">{fieldErrors.firstName}</p>}
                   </div>
@@ -236,6 +278,7 @@ export default function SignUpForm() {
                       value={formData.lastName}
                       onChange={handleChange}
                       placeholder="Enter your last name"
+                      disabled={!tinValid}
                     />
                     {fieldErrors.lastName && <p className="text-red-500 text-sm">{fieldErrors.lastName}</p>}
                   </div>
@@ -248,6 +291,7 @@ export default function SignUpForm() {
                     value={formData.email}
                     onChange={handleChange}
                     placeholder="Enter your personal email"
+                    disabled={!tinValid}
                   />
                   {fieldErrors.email && <p className="text-red-500 text-sm">{fieldErrors.email}</p>}
                 </div>
@@ -260,6 +304,7 @@ export default function SignUpForm() {
                       name="password"
                       value={formData.password}
                       onChange={handleChange}
+                      disabled={!tinValid}
                     />
                     <span
                       onClick={() => setShowPassword(!showPassword)}
@@ -295,7 +340,7 @@ export default function SignUpForm() {
                     <ChevronLeftIcon className="w-5 h-5 mr-1" />
                     Back
                   </button>
-                  <Button type="submit" className="w-2/3" disabled={isLoading}>
+                  <Button type="submit" className="w-2/3" disabled={isLoading || !tinValid}>
                     {isLoading ? (
                       <span className="flex items-center justify-center">
                         <svg

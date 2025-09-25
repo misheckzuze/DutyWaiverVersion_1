@@ -38,9 +38,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const login = async (tin: string, email: string, password: string) => {
+    let toastId: any;
     try {
       // Show loading toast
-      const toastId = toast.loading("Signing in...");
+      toastId = toast.loading("Signing in...");
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/login`, {
         method: "POST",
@@ -63,19 +64,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         handleSuccessfulAuth(data.data, tin);
       } else {
         // Update toast to error
-        toast.update(toastId, {
-          render: data.message || "Login failed",
-          type: "error",
-          isLoading: false,
-          autoClose: 5000
-        });
+        if (toastId) {
+          toast.update(toastId, {
+            render: data.message || "Login failed",
+            type: "error",
+            isLoading: false,
+            autoClose: 5000
+          });
+        }
         throw new Error(data.message || "Login failed");
       }
     } catch (error: any) {
       console.error("Login failed:", error);
-      // Show error toast if not already shown
-      if (!toast.isActive("login-error")) {
-        toast.error(error.message || "Login failed", { toastId: "login-error" });
+      // Ensure loading toast is closed
+      if (toastId) {
+        toast.update(toastId, { render: error.message || 'Login failed', type: 'error', isLoading: false, autoClose: 5000 });
+      } else {
+        toast.error(error.message || "Login failed");
       }
       throw error;
     }
@@ -93,9 +98,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       password }: RegistrationProps
 
   ) => {
+    let toastId: any;
     try {
       // Show loading toast
-      const toastId = toast.loading("Creating your account...");
+      toastId = toast.loading("Creating your account...");
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/register`, {
         method: "POST",
@@ -129,19 +135,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         handleSuccessfulAuth(data.data, tin);
       } else {
         // Update toast to error
-        toast.update(toastId, {
-          render: data.message || "Registration failed",
-          type: "error",
-          isLoading: false,
-          autoClose: 5000
-        });
+        if (toastId) {
+          toast.update(toastId, {
+            render: data.message || "Registration failed",
+            type: "error",
+            isLoading: false,
+            autoClose: 5000
+          });
+        }
         throw new Error(data.message || "Registration failed");
       }
     } catch (error: any) {
       console.error("Registration failed:", error);
-      // Show error toast if not already shown
-      if (!toast.isActive("register-error")) {
-        toast.error(error.message || "Registration failed", { toastId: "register-error" });
+      if (toastId) {
+        toast.update(toastId, { render: error.message || 'Registration failed', type: 'error', isLoading: false, autoClose: 5000 });
+      } else {
+        toast.error(error.message || "Registration failed");
       }
       throw error;
     }
