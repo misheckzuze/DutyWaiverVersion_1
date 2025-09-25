@@ -79,3 +79,53 @@ export const useHSCodeValidation = () => {
     clearValidationError
   };
 };
+
+export interface BatchValidationItem {
+  input: string;
+  success: boolean;
+  message: string;
+  data: HSCodeValidationResponse['data'];
+}
+
+interface HSCodeBatchValidationResponse {
+  success: boolean;
+  message: string;
+  data: BatchValidationItem[];
+}
+
+export const useHSCodeBatchValidation = () => {
+  const [isBatchValidating, setIsBatchValidating] = useState(false);
+  const [batchError, setBatchError] = useState<string | null>(null);
+
+  const validateBatch = async (hsCodes: string[]): Promise<BatchValidationItem[] | null> => {
+    const filtered = hsCodes.filter(code => /^\d{8}$/.test(code));
+    if (filtered.length === 0) {
+      setBatchError('No valid 8-digit HS Codes found');
+      return null;
+    }
+
+    setIsBatchValidating(true);
+    setBatchError(null);
+
+    try {
+      const response = await axiosInstance.post<HSCodeBatchValidationResponse>('/api/v1/hscode/validate/batch', {
+        hsCodes: filtered
+      });
+      if (response.data.success) {
+        return response.data.data;
+      }
+      setBatchError(response.data.message || 'Batch validation failed');
+      return null;
+    } catch (error: any) {
+      console.error('HS Code batch validation error:', error);
+      setBatchError(error.response?.data?.message || 'Failed to validate HS Codes');
+      return null;
+    } finally {
+      setIsBatchValidating(false);
+    }
+  };
+
+  const clearBatchError = () => setBatchError(null);
+
+  return { validateBatch, isBatchValidating, batchError, clearBatchError };
+};

@@ -162,15 +162,33 @@ export const ItemForm: React.FC<ItemFormProps> = ({
 
   return (
     <div id="item-form" className="bg-blue-50 p-4 rounded-lg border border-blue-100 mb-6">
-      <h4 className="font-medium text-blue-800 mb-3">
-        {isEditMode ? 'Edit Item List' : editingItemId ? 'Edit Item' : 'Add New Item'}
-      </h4>
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="font-medium text-blue-800">
+          {isEditMode ? 'Edit Item List' : editingItemId ? 'Edit Item' : 'Add New Item'}
+        </h4>
+        <Button
+          type="button"
+          onClick={handleValidateHSCode}
+          disabled={
+            isValidating || 
+            (editingItemId 
+              ? !items.find(i => i.id === editingItemId)?.hsCode || (items.find(i => i.id === editingItemId)?.hsCode || '').length !== 8
+              : !newItem.hsCode || newItem.hsCode.length !== 8
+            ) || 
+            isHSCodeValidated
+          }
+          className="px-3 py-2 text-xs bg-green-600 hover:bg-green-700 text-white disabled:bg-gray-300 disabled:cursor-not-allowed"
+          size="sm"
+        >
+          {isValidating ? 'Verifying...' : isHSCodeValidated ? 'Verified ✓' : 'Verify HS Code'}
+        </Button>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
         {/* HS Code */}
         <div className="md:col-span-2">
           <Label>HS Code*</Label>
-          <div className="flex gap-2">
+          <div>
             <Input
               type="text"
               value={editingItemId
@@ -178,25 +196,9 @@ export const ItemForm: React.FC<ItemFormProps> = ({
                 : newItem.hsCode}
               onChange={(e) => handleHSCodeChange(e, !!editingItemId)}
               placeholder="HS Code"
-              className="flex-1"
+              className="w-full"
               maxLength={8}
             />
-            <Button
-              type="button"
-              onClick={handleValidateHSCode}
-              disabled={
-                isValidating || 
-                (editingItemId 
-                  ? !items.find(i => i.id === editingItemId)?.hsCode || items.find(i => i.id === editingItemId)?.hsCode?.length !== 8
-                  : !newItem.hsCode || newItem.hsCode.length !== 8
-                ) || 
-                isHSCodeValidated
-              }
-              className="px-3 py-2 text-xs bg-green-600 hover:bg-green-700 text-white disabled:bg-gray-300 disabled:cursor-not-allowed"
-              size="sm"
-            >
-              {isValidating ? '...' : isHSCodeValidated ? '✓' : 'Verify'}
-            </Button>
           </div>
           {(hsCodeValidationError || validationError) && (
             <p className="text-red-500 text-xs mt-1">
