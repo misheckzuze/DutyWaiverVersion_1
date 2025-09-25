@@ -28,10 +28,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [token, setToken] = useState<string | null>(null);
   const router = useRouter();
 
-  const handleSuccessfulAuth = (authData: { token: string; tokenExpires: string }) => {
+  const handleSuccessfulAuth = (authData: { token: string; tokenExpires: string }, tin: string) => {
     setToken(authData.token);
     localStorage.setItem("accessToken", authData.token);
     localStorage.setItem("authData", JSON.stringify(authData));
+    localStorage.setItem("Tin", tin);
     document.cookie = `accessToken=${authData.token}; path=/; expires=${new Date(authData.tokenExpires).toUTCString()}`;
     router.push("/"); // Redirect to home page
   };
@@ -59,7 +60,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           isLoading: false,
           autoClose: 3000
         });
-        handleSuccessfulAuth(data.data);
+        handleSuccessfulAuth(data.data, tin);
       } else {
         // Update toast to error
         toast.update(toastId, {
@@ -125,7 +126,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           autoClose: 3000
         });
         // Reuse token logic directly instead of calling login again
-        handleSuccessfulAuth(data.data);
+        handleSuccessfulAuth(data.data, tin);
       } else {
         // Update toast to error
         toast.update(toastId, {
