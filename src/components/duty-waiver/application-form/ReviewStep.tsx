@@ -59,9 +59,12 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
     }, [getUnitOfMeasure]);
 
   const getAttachmentTypeLabel = (value: string) => {
-    const option = attachmentTypeOptions.find(opt => opt.value === value || opt.label === value);
+    const option = attachmentTypeOptions.find(opt => String(opt.value) === String(value) || opt.label === value);
     return option ? option.label : value;
   };
+
+  const baseUrl = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
+  const fileUrl = (relativePath?: string) => (relativePath ? `${baseUrl}${relativePath}` : undefined);
 
   const formatDate = (date: Date | null) => {
     if (!date) return <span className="text-gray-400">Not provided</span>;
@@ -197,12 +200,18 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
                   <div className="flex items-center">
                     <EyeCloseIcon className="h-5 w-5 text-gray-400 mr-2" />
                     <span>{getAttachmentTypeLabel(attachment.type)}</span>
-                    {attachment.file && (
-                      <span className="text-sm text-gray-500 ml-2">({typeof attachment.file === 'string' ? attachment.file : attachment.file.name})</span>
-                    )}
                   </div>
-                  {!attachment.file && (
-                    <span className="text-sm text-red-500">Missing file</span>
+                  {attachment.relativePath ? (
+                    <a
+                      href={fileUrl(attachment.relativePath)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-blue-600 hover:underline"
+                    >
+                      View
+                    </a>
+                  ) : (
+                    <span className="text-sm text-red-500">Not uploaded</span>
                   )}
                 </div>
               ))}

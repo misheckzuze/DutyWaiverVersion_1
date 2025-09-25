@@ -25,8 +25,8 @@ export const AddAttachmentForm: React.FC<AddAttachmentFormProps> = ({
       try {
         const attachmentTypes = await getAttachmentTypes();
         const options = attachmentTypes.map((type: any) => ({
-          value: type.name,
-          label: type.name
+          value: String(type.id),
+          label: type.name || type.description || String(type.id)
         }));
         setAttachmentTypeOptions(options);
       } catch (error) {

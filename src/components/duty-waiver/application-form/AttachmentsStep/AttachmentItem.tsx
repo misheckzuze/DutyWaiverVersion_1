@@ -1,14 +1,17 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Attachment } from '@/types/AttachmentModel';
 import { TrashBinIcon } from '@/icons';
 import Button from '@/components/ui/button/Button';
 import useApplication from '@/hooks/useApplications';
 // import { attachmentTypeOptions } from '@/utils/constants';
+import useDocumentUpload from '@/hooks/useDocumentUpload';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 interface AttachmentItemProps {
   attachment: Attachment;
-  onFileChange: (id: string, file: File | null) => void;
+  onFileChange: (id: string, file: File | null, attachmentId?: number, relativePath?: string) => void;
   onRemove: (id: string) => void;
 }
 
@@ -17,12 +20,28 @@ export const AttachmentItem: React.FC<AttachmentItemProps> = ({
   onFileChange,
   onRemove
 }) => {
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const { uploadDocument, getProgress } = useDocumentUpload();
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files ? e.target.files[0] : null;
+    if (!file) return;
+
     onFileChange(attachment.id, file);
+
+    const toastId = toast.loading('Uploading document...');
+    try {
+      const res = await uploadDocument(file);
+      toast.update(toastId, { render: 'Document uploaded', type: 'success', isLoading: false, autoClose: 2000 });
+
+      // Pass the attachmentId and relativePath to parent
+      onFileChange(attachment.id, file, res.data.attachmentId, res.data.relativePath);
+    } catch (err: any) {
+      toast.update(toastId, { render: err?.message || 'Upload failed', type: 'error', isLoading: false, autoClose: 4000 });
+    }
   };
 
   const currentFileName = typeof attachment.file === 'string' ? attachment.file : attachment.file?.name;
+  const progress = useMemo(() => (currentFileName ? getProgress(currentFileName) : undefined), [currentFileName, getProgress]);
 
   const [attachmentTypeOptions, setAttachmentTypeOptions] = useState<{ value: string, label: string }[]>([]);
   const { getAttachmentTypes } = useApplication();
@@ -34,7 +53,7 @@ export const AttachmentItem: React.FC<AttachmentItemProps> = ({
         const attachmentTypeOptions = await getAttachmentTypes();
         const options = attachmentTypeOptions.map((type: any) => ({
           value: type.id,
-          label: type.name
+          label: type.name || type.description || String(type.id)
         }));
         setAttachmentTypeOptions(options);
       } catch (error) {
@@ -45,8 +64,8 @@ export const AttachmentItem: React.FC<AttachmentItemProps> = ({
     fetchAttachmentTypes();
   }, []);
 
-  const attachmentTypeOption = attachmentTypeOptions.find(opt => opt.value === attachment.type);
-  const attachmementTypeLabel = attachmentTypeOption ? attachmentTypeOption.label : attachment.type;
+  const attachmentTypeOption = attachmentTypeOptions.find(opt => String(opt.value) === String(attachment.type));
+  const attachmementTypeLabel = attachmentTypeOption ? attachmentTypeOption.label : String(attachment.type);
 
   return (
     <div className="border rounded-lg p-4">
@@ -78,6 +97,14 @@ export const AttachmentItem: React.FC<AttachmentItemProps> = ({
           </Button>
         </div>
       </div>
+      {progress && (
+        <div className="mt-3">
+          <div className="h-2 w-full bg-gray-200 rounded">
+            <div className="h-2 bg-blue-600 rounded" style={{ width: `${progress.progress}%` }} />
+          </div>
+          <p className="text-xs text-gray-500 mt-1">{progress.status === 'completed' ? 'Uploaded' : `Uploading ${progress.progress}%`}</p>
+        </div>
+      )}
     </div>
   );
 };

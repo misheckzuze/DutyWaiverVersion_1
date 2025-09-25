@@ -63,7 +63,8 @@ export default function useDocumentUpload() {
 
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      // API expects key name 'File'
+      formData.append('File', file);
 
       const xhr = new XMLHttpRequest();
 
@@ -107,7 +108,8 @@ export default function useDocumentUpload() {
         };
       });
 
-      xhr.open('POST', apiUrl('/api/attachments/upload'));
+      // Use v1 endpoint
+      xhr.open('POST', apiUrl('/api/v1/attachments/upload'));
       xhr.timeout = 300000; // 5 minutes timeout
 
       // Set headers

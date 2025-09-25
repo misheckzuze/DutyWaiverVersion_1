@@ -12,6 +12,8 @@ import { Attachment } from '@/types/AttachmentModel';
 import useApplication from '@/hooks/useApplications';
 import { ApplicationProps } from '@/types/Application';
 import { useRouter } from "next/navigation";
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import * as Yup from "yup";
 
 export default function ApplicationForm() {
@@ -48,6 +50,9 @@ export default function ApplicationForm() {
     isLoading, 
     createDraft 
   } = useApplication();
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
 
   // Load user data from localStorage on component mount
   useEffect(() => {
@@ -241,10 +246,12 @@ const handleSubmit = async (e: React.MouseEvent) => {
     currency: "MWK",
     startDate: projectDetails.startDate?.toISOString().split("T")[0] || "",
     endDate: projectDetails.endDate?.toISOString().split("T")[0] || "",
-    attachments: attachments.map(att => ({
-      type: att.type,
-      file: typeof att.file === "string" ? att.file : att.file?.name || ""
-    })),
+    attachments: attachments
+      .filter(att => typeof att.attachmentId === 'number')
+      .map(att => ({
+        attachmentTypeId: Number(att.type),
+        attachmentId: att.attachmentId as number
+      })),
     items: items.map(item => ({
       description: item.description,
       hscode: item.hsCode,
@@ -261,21 +268,21 @@ const handleSubmit = async (e: React.MouseEvent) => {
   };
 
   console.log("Final payload being submitted:", payload);
+  console.log("Attachments state:", attachments);
+  console.log("Filtered attachments:", attachments.filter(att => typeof att.attachmentId === 'number'));
 
   try {
+    setIsSubmitting(true);
+    const toastId = toast.loading('Submitting application...');
     await createDraft(payload);
+    toast.update(toastId, { render: 'Application submitted successfully', type: 'success', isLoading: false, autoClose: 3000 });
     router.push("/my-applications");
-    alert("Application submitted successfully!");
   } catch (error: any) {
     console.error("Error submitting application:", error);
-
-    if (error.response) {
-      alert(`Submission failed: ${JSON.stringify(error.response.data)}`);
-    } else if (error.request) {
-      alert("No response received from server.");
-    } else {
-      alert(`Unexpected error: ${error.message}`);
-    }
+    const message = error?.response?.data?.message || error?.message || 'Submission failed';
+    toast.error(message);
+  } finally {
+    setIsSubmitting(false);
   }
 };
 
@@ -302,10 +309,12 @@ const handleSubmit = async (e: React.MouseEvent) => {
     currency: "MWK",
     startDate: projectDetails.startDate?.toISOString().split("T")[0] || "",
     endDate: projectDetails.endDate?.toISOString().split("T")[0] || "",
-    attachments: attachments.map(att => ({
-      type: att.type,
-      file: typeof att.file === "string" ? att.file : att.file?.name || ""
-    })),
+    attachments: attachments
+      .filter(att => typeof att.attachmentId === 'number')
+      .map(att => ({
+        attachmentTypeId: Number(att.type),
+        attachmentId: att.attachmentId as number
+      })),
     items: items.map(item => ({
       description: item.description,
       hscode: item.hsCode,
@@ -322,14 +331,20 @@ const handleSubmit = async (e: React.MouseEvent) => {
   };
 
   console.log("Draft payload being submitted:", payload);
+  console.log("Attachments state:", attachments);
+  console.log("Filtered attachments:", attachments.filter(att => typeof att.attachmentId === 'number'));
 
   try {
+    setIsSavingDraft(true);
+    const toastId = toast.loading('Saving draft...');
     await createDraft(payload);
+    toast.update(toastId, { render: 'Draft saved', type: 'success', isLoading: false, autoClose: 2000 });
     router.push("/my-applications");
-    alert("Draft saved successfully!");
   } catch (error: any) {
     console.error("Error saving draft:", error);
-    alert(`Failed to save draft: ${error.message || error}`);
+    toast.error(error?.message || 'Failed to save draft');
+  } finally {
+    setIsSavingDraft(false);
   }
 };
 
@@ -389,18 +404,28 @@ const handleSubmit = async (e: React.MouseEvent) => {
             <div>
               <button
                 onClick={handleDraft}
-                disabled={isLoading}
-                className="ml-auto mr-8 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                disabled={isSavingDraft}
+                className={`ml-auto mr-8 px-4 py-2 rounded-md text-white transition-colors ${isSavingDraft ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
               >
-                {isLoading ? 'Saving...' : 'Save Draft'}
+                {isSavingDraft ? (
+                  <span className="inline-flex items-center gap-2">
+                    <span className="h-4 w-4 border-2 border-white/60 border-t-transparent rounded-full animate-spin" />
+                    Saving...
+                  </span>
+                ) : 'Save Draft'}
               </button>
 
               <button
                 onClick={handleSubmit}
-                disabled={isLoading}
-                className="ml-auto px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                disabled={isSubmitting}
+                className={`ml-auto px-4 py-2 rounded-md text-white transition-colors ${isSubmitting ? 'bg-green-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
               >
-                {isLoading ? 'Submitting...' : 'Submit Changes'}
+                {isSubmitting ? (
+                  <span className="inline-flex items-center gap-2">
+                    <span className="h-4 w-4 border-2 border-white/60 border-t-transparent rounded-full animate-spin" />
+                    Submitting...
+                  </span>
+                ) : 'Submit Application'}
               </button>
               {error && <div className="error-message">{error}</div>}
             </div>

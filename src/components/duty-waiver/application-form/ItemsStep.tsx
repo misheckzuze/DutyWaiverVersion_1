@@ -5,6 +5,8 @@ import { ItemForm } from './ItemsStep/ItemForm';
 import ItemTable from './ItemsStep/ItemTable';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { useHSCodeBatchValidation } from '@/hooks/useHSCodeValidation';
 
 interface ItemsStepProps {
@@ -108,14 +110,17 @@ export const ItemsStep: React.FC<ItemsStepProps> = ({ items, setItems, isEditMod
 
       setItems(prev => [...prev, ...itemsToAdd]);
 
-      // Build user feedback
+      // Build user feedback (professional toasts)
       const invalidFormatCodes = invalidFormat.map(r => r.hsCode).filter(Boolean);
-      const messages: string[] = [];
-      if (itemsToAdd.length > 0) messages.push(`${itemsToAdd.length} item(s) added.`);
-      if (failedCodes.length > 0) messages.push(`Invalid HS Codes (not added): ${failedCodes.join(', ')}`);
-      if (invalidFormatCodes.length > 0) messages.push(`Bad format (expect 8 digits): ${invalidFormatCodes.join(', ')}`);
-
-      if (messages.length > 0) alert(messages.join('\n'));
+      if (itemsToAdd.length > 0) {
+        toast.success(`${itemsToAdd.length} item(s) added after validation`);
+      }
+      if (failedCodes.length > 0) {
+        toast.error(`Invalid HS Codes (not added): ${failedCodes.join(', ')}`);
+      }
+      if (invalidFormatCodes.length > 0) {
+        toast.info(`Bad format (expect 8 digits): ${invalidFormatCodes.join(', ')}`);
+      }
 
       setIsProcessingUpload(false);
       setProgressText('');
