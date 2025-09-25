@@ -13,7 +13,6 @@ import { ViewAttachments } from './ViewAttachments';
 import { ApplicationProps, ApplicationSubmissionResponse } from '@/types/Application';
 import Loader from '@/components/ui-utils/Loader';
 import { ClockIcon, CheckCircleIcon, XCircleIcon } from '@/icons';
-import EnhancedConfirmationDialog from '@/components/ui-utils/EnhancedConfirmationDialog';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -41,10 +40,6 @@ export default function ViewApplication({ id }: ViewApplicationProps) {
   });
   const [items, setItems] = useState<Item[]>([]);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [confirmAction, setConfirmAction] = useState<() => void>(() => {});
-  const [confirmMessage, setConfirmMessage] = useState('');
-  const [confirmType, setConfirmType] = useState<'success' | 'warning' | 'danger' | 'info'>('warning');
 
   const { getApplicationById } = useApplication();
 
@@ -207,12 +202,7 @@ export default function ViewApplication({ id }: ViewApplicationProps) {
 
               {applicationData?.status === 'Draft' && (
                 <Button
-                  onClick={() => {
-                    setConfirmMessage("Are you sure you want to edit this application?");
-                    setConfirmType("info");
-                    setConfirmAction(() => handleEdit);
-                    setShowConfirmDialog(true);
-                  }}
+                  onClick={handleEdit}
                   variant="primary"
                   className="px-4 py-2"
                 >
@@ -221,16 +211,6 @@ export default function ViewApplication({ id }: ViewApplicationProps) {
               )}
             </div>
 
-            <EnhancedConfirmationDialog
-              isOpen={showConfirmDialog}
-              message={confirmMessage}
-              onConfirm={() => {
-                confirmAction();
-                setShowConfirmDialog(false);
-              }}
-              onCancel={() => setShowConfirmDialog(false)}
-              type={confirmType}
-            />
           </>
         )}
       </ComponentCard>

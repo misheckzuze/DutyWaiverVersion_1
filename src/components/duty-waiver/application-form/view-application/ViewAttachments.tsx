@@ -8,33 +8,41 @@ interface ViewAttachmentsProps {
 }
 
 export const ViewAttachments: React.FC<ViewAttachmentsProps> = ({ attachments }) => {
-  const getFileIcon = (fileName: string) => {
-    const extension = fileName.split('.').pop()?.toLowerCase();
+  const getFileIcon = (contentType: string) => {
+    if (!contentType) return <DocumentIcon className="w-6 h-6 text-gray-500" />;
     
-    // You can add more file type icons as needed
-    switch (extension) {
-      case 'pdf':
-        return <DocumentIcon className="w-6 h-6 text-red-500" />;
-      case 'doc':
-      case 'docx':
-        return <DocumentIcon className="w-6 h-6 text-blue-500" />;
-      case 'xls':
-      case 'xlsx':
-        return <DocumentIcon className="w-6 h-6 text-green-500" />;
-      case 'jpg':
-      case 'jpeg':
-      case 'png':
+    const type = contentType.split('/')[0];
+    const subtype = contentType.split('/')[1];
+    
+    switch (type) {
+      case 'application':
+        if (subtype?.includes('pdf')) return <DocumentIcon className="w-6 h-6 text-red-500" />;
+        if (subtype?.includes('word') || subtype?.includes('document')) return <DocumentIcon className="w-6 h-6 text-blue-500" />;
+        if (subtype?.includes('sheet') || subtype?.includes('excel')) return <DocumentIcon className="w-6 h-6 text-green-500" />;
+        return <DocumentIcon className="w-6 h-6 text-gray-500" />;
+      case 'image':
         return <DocumentIcon className="w-6 h-6 text-purple-500" />;
       default:
         return <DocumentIcon className="w-6 h-6 text-gray-500" />;
     }
   };
 
-  const handleDownload = (attachment: Attachment) => {
-    // This is a placeholder for actual download functionality
-    // In a real implementation, you would fetch the file from the server
-    console.log('Download attachment:', attachment);
-    alert('Download functionality would be implemented here.');
+  const formatFileSize = (size: number) => {
+    if (!size) return '';
+    const kb = size / 1024;
+    return kb < 1024 ? `${kb.toFixed(1)} KB` : `${(kb / 1024).toFixed(1)} MB`;
+  };
+
+  const getFileTypeFromContentType = (contentType: string) => {
+    if (!contentType) return 'FILE';
+    return contentType.split('/').pop()?.toUpperCase() || 'FILE';
+  };
+
+  const handleView = (attachment: Attachment) => {
+    if (attachment.relativePath) {
+      const fileUrl = `${process.env.NEXT_PUBLIC_API_URL}${attachment.relativePath}`;
+      window.open(fileUrl, '_blank');
+    }
   };
 
   return (
@@ -53,23 +61,26 @@ export const ViewAttachments: React.FC<ViewAttachmentsProps> = ({ attachments })
               className="flex items-center p-4 border border-gray-200 rounded-lg bg-white hover:bg-gray-50 transition-colors"
             >
               <div className="mr-4">
-                {getFileIcon((typeof attachment.file === 'string' ? attachment.file : attachment.file?.name) || '')}
+                {getFileIcon(attachment.contentType || '')}
               </div>
               <div className="flex-1 min-w-0">
                 <h4 className="text-sm font-medium text-gray-800 truncate">
-                  {(typeof attachment.file === 'string' ? attachment.file : attachment.file?.name) || 'Unnamed file'}
+                  Document Type: {attachment.type || 'Unknown'}
                 </h4>
                 <p className="text-xs text-gray-500 mt-1">
-                  Type: {attachment.type || 'Unknown'}
+                  {getFileTypeFromContentType(attachment.contentType || '')}
+                  {attachment.size && ` • ${formatFileSize(attachment.size)}`}
                 </p>
               </div>
-              <button
-                onClick={() => handleDownload(attachment)}
-                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors"
-                title="Download"
-              >
-                <DownloadIcon className="w-5 h-5" />
-              </button>
+              {attachment.relativePath && (
+                <button
+                  onClick={() => handleView(attachment)}
+                  className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-full transition-colors"
+                  title="View Document"
+                >
+                  <DownloadIcon className="w-5 h-5" />
+                </button>
+              )}
             </div>
           ))}
         </div>
