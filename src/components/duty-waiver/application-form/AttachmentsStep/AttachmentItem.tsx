@@ -74,8 +74,12 @@ export const AttachmentItem: React.FC<AttachmentItemProps> = ({
       <div className="flex justify-between items-center">
         <div>
           <h4 className="font-medium">{attachmementTypeLabel}</h4>
-          {currentFileName && (
-            <p className="text-sm text-gray-500">{currentFileName}</p>
+          {/* Show file type and size only */}
+          {(attachment.contentType || attachment.size) && (
+            <p className="text-sm text-gray-500">
+              {attachment.contentType ? attachment.contentType.split('/').pop()?.toUpperCase() : ''}
+              {attachment.size ? ` • ${(attachment.size / 1024).toFixed(1)} KB` : ''}
+            </p>
           )}
         </div>
         <div className="flex gap-2">

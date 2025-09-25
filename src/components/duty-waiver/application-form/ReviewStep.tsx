@@ -200,6 +200,12 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
                   <div className="flex items-center">
                     <EyeCloseIcon className="h-5 w-5 text-gray-400 mr-2" />
                     <span>{getAttachmentTypeLabel(attachment.type)}</span>
+                    {(attachment.contentType || attachment.size) && (
+                      <span className="ml-2 text-xs text-gray-500">
+                        {attachment.contentType ? attachment.contentType.split('/').pop()?.toUpperCase() : ''}
+                        {attachment.size ? ` • ${(attachment.size / 1024).toFixed(1)} KB` : ''}
+                      </span>
+                    )}
                   </div>
                   {attachment.relativePath ? (
                     <a
