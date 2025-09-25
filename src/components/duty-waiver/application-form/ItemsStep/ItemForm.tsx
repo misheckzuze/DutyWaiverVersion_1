@@ -8,6 +8,7 @@ import Select from '@/components/ui-utils/Select';
 import { ChevronDownIcon } from '@/icons';
 import Button from '@/components/ui/button/Button';
 import useApplication from '@/hooks/useApplications';
+import { useHSCodeValidation } from '@/hooks/useHSCodeValidation';
 
 interface ItemFormProps {
   items: Item[];
@@ -32,7 +33,11 @@ export const ItemForm: React.FC<ItemFormProps> = ({
     value: 0,
   });
   const [unitOfMeasureOptions, setUnitOfMeasureOptions] = useState<{ value: string, label: string }[]>([]);
+  const [isHSCodeValidated, setIsHSCodeValidated] = useState(false);
+  const [hsCodeValidationError, setHsCodeValidationError] = useState<string | null>(null);
+  
   const { getUnitOfMeasure } = useApplication();
+  const { validateHSCode, isValidating, validationError, clearValidationError } = useHSCodeValidation();
   const currentItem = editingItemId ? items.find(item => item.id === editingItemId) : null;
 
 
@@ -75,7 +80,61 @@ export const ItemForm: React.FC<ItemFormProps> = ({
     } else {
       setNewItem({ ...newItem, value: rawValue });
     }
+  };
 
+  const handleHSCodeChange = (e: React.ChangeEvent<HTMLInputElement>, isEditing: boolean) => {
+    const value = e.target.value.replace(/\D/g, ''); // Only allow numbers
+    if (isEditing) {
+      setItems(items.map(i => 
+        i.id === editingItemId ? { ...i, hsCode: value } : i
+      ));
+    } else {
+      setNewItem({ ...newItem, hsCode: value });
+    }
+    
+    // Clear validation state when HS Code changes
+    setIsHSCodeValidated(false);
+    setHsCodeValidationError(null);
+    clearValidationError();
+  };
+
+  const handleValidateHSCode = async () => {
+    const currentHsCode = editingItemId 
+      ? items.find(i => i.id === editingItemId)?.hsCode || ''
+      : newItem.hsCode;
+
+    if (!currentHsCode || currentHsCode.length !== 8) {
+      setHsCodeValidationError('HS Code must be exactly 8 digits');
+      return;
+    }
+
+    const result = await validateHSCode(currentHsCode);
+    
+    if (result) {
+      setIsHSCodeValidated(true);
+      setHsCodeValidationError(null);
+      
+      // Auto-populate description and unit of measure
+      if (editingItemId) {
+        setItems(items.map(i => 
+          i.id === editingItemId 
+            ? { 
+                ...i, 
+                description: result.description, 
+                unitOfMeasure: result.unitOfMeasure 
+              } 
+            : i
+        ));
+      } else {
+        setNewItem({ 
+          ...newItem, 
+          description: result.description, 
+          unitOfMeasure: result.unitOfMeasure 
+        });
+      }
+    } else {
+      setHsCodeValidationError(validationError || 'HS Code validation failed');
+    }
   };
 
   const handleSave = () => {
@@ -91,11 +150,15 @@ export const ItemForm: React.FC<ItemFormProps> = ({
         value: 0,
       });
     }
+    // Reset validation state
+    setIsHSCodeValidated(false);
+    setHsCodeValidationError(null);
+    clearValidationError();
   };
 
   const isFormValid = editingItemId
-    ? currentItem?.hsCode && currentItem?.description && currentItem?.unitOfMeasure
-    : newItem.hsCode && newItem.description && newItem.unitOfMeasure;
+    ? currentItem?.hsCode && currentItem?.description && currentItem?.unitOfMeasure && isHSCodeValidated
+    : newItem.hsCode && newItem.description && newItem.unitOfMeasure && isHSCodeValidated;
 
   return (
     <div id="item-form" className="bg-blue-50 p-4 rounded-lg border border-blue-100 mb-6">
@@ -107,17 +170,39 @@ export const ItemForm: React.FC<ItemFormProps> = ({
         {/* HS Code */}
         <div className="md:col-span-2">
           <Label>HS Code*</Label>
-          <Input
-            type="text"
-            value={editingItemId
-              ? items.find(i => i.id === editingItemId)?.hsCode || ''
-              : newItem.hsCode}
-            onChange={(e) => editingItemId
-              ? setItems(items.map(i => i.id === editingItemId ? { ...i, hsCode: e.target.value } : i))
-              : setNewItem({ ...newItem, hsCode: e.target.value })}
-            placeholder="HS Code"
-            className="w-full"
-          />
+          <div className="flex gap-2">
+            <Input
+              type="text"
+              value={editingItemId
+                ? items.find(i => i.id === editingItemId)?.hsCode || ''
+                : newItem.hsCode}
+              onChange={(e) => handleHSCodeChange(e, !!editingItemId)}
+              placeholder="HS Code"
+              className="flex-1"
+              maxLength={8}
+            />
+            <Button
+              type="button"
+              onClick={handleValidateHSCode}
+              disabled={
+                isValidating || 
+                (editingItemId 
+                  ? !items.find(i => i.id === editingItemId)?.hsCode || items.find(i => i.id === editingItemId)?.hsCode?.length !== 8
+                  : !newItem.hsCode || newItem.hsCode.length !== 8
+                ) || 
+                isHSCodeValidated
+              }
+              className="px-3 py-2 text-xs bg-green-600 hover:bg-green-700 text-white disabled:bg-gray-300 disabled:cursor-not-allowed"
+              size="sm"
+            >
+              {isValidating ? '...' : isHSCodeValidated ? '✓' : 'Verify'}
+            </Button>
+          </div>
+          {(hsCodeValidationError || validationError) && (
+            <p className="text-red-500 text-xs mt-1">
+              {hsCodeValidationError || validationError}
+            </p>
+          )}
         </div>
 
         {/* Description */}
@@ -133,6 +218,7 @@ export const ItemForm: React.FC<ItemFormProps> = ({
               : setNewItem({ ...newItem, description: e.target.value })}
             placeholder="Item description"
             className="w-full"
+            disabled={!isHSCodeValidated}
           />
         </div>
 
@@ -150,6 +236,7 @@ export const ItemForm: React.FC<ItemFormProps> = ({
                 ? setItems(items.map(i => i.id === editingItemId ? { ...i, unitOfMeasure: value } : i))
                 : setNewItem({ ...newItem, unitOfMeasure: value })}
               className="w-full dark:bg-dark-900"
+              disabled={!isHSCodeValidated}
             />
             <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
           </div>
@@ -199,6 +286,10 @@ export const ItemForm: React.FC<ItemFormProps> = ({
                 unitOfMeasure: '',
                 value: 0
               });
+              // Reset validation state
+              setIsHSCodeValidated(false);
+              setHsCodeValidationError(null);
+              clearValidationError();
             }}
             variant="outline"
             className="border-gray-300"
