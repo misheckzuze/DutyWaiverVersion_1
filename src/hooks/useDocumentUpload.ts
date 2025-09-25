@@ -23,7 +23,10 @@ export interface UploadProgress {
 export interface UploadedDocument {
   fileName: string;
   relativePath: string;
-  attachmentRecordId: number;
+  attachmentId?: number;
+  attachmentRecordId?: number; // legacy/alternative key
+  contentType?: string;
+  size?: number;
 }
 
 export interface UploadResponse {

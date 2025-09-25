@@ -21,14 +21,16 @@ export const AttachmentsStep: React.FC<AttachmentsStepProps> = ({
 
   const addAttachment = () => setIsAddingAttachment(true);
 
-  const handleAttachmentFileChange = (id: string, file: File | null, attachmentId?: number, relativePath?: string) => {
+  const handleAttachmentFileChange = (id: string, file: File | null, attachmentId?: number, relativePath?: string, contentType?: string, size?: number) => {
     setAttachments(attachments.map(attachment =>
       attachment.id === id ? { 
         ...attachment, 
         file, 
         attachmentId, 
         relativePath,
-        uploaded: !!attachmentId 
+        uploaded: !!attachmentId,
+        contentType: contentType ?? attachment.contentType,
+        size: size ?? attachment.size,
       } : attachment
     ));
   };

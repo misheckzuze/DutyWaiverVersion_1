@@ -12,8 +12,9 @@ import { Item } from '@/types/ItemModel';
 import { Attachment } from '@/types/AttachmentModel';
 import ComponentCard from '@/components/common/ComponentCard';
 import Button from '@/components/ui/button/Button';
-import ConfirmationDialog from '@/components/ui-utils/ConfirmationDialog';
 import { ApplicationProps } from '@/types/Application';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 interface EditApplicationFormProps {
   id: string;
@@ -40,8 +41,6 @@ export default function EditApplicationForm({ id }: EditApplicationFormProps) {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [showDraftConfirmDialog, setDraftShowConfirmDialog] = useState(false);
-  const [showSubmitConfirmDialog, setSubmitShowConfirmDialog] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [redirect, setRedirect] = useState(false);
 
@@ -145,10 +144,12 @@ export default function EditApplicationForm({ id }: EditApplicationFormProps) {
       deleted: false, // default
       startDate: projectDetails.startDate?.toISOString().split('T')[0] || "",
       endDate: projectDetails.endDate?.toISOString().split('T')[0] || "",
-      attachments: attachments.map(att => ({
-        type: att.type,
-        file: typeof att.file === "string" ? att.file : "" // send string name
-      })),
+      attachments: attachments
+        .filter(att => typeof att.attachmentId === 'number')
+        .map(att => ({
+          attachmentTypeId: Number(att.type),
+          attachmentId: att.attachmentId as number
+        })),
       items: items.map(item => ({
         description: item.description,
         hsCode: item.hsCode,
@@ -171,41 +172,41 @@ export default function EditApplicationForm({ id }: EditApplicationFormProps) {
 
 
   const handleDraft = async () => {
+    const payload = buildPayload("Draft");
+    const toastId = toast.loading('Saving draft...');
     setIsSaving(true);
     try {
-      const payload = buildPayload("Draft");
       const response = await updateApplication(parseInt(id), payload);
-
       if (response?.success) {
-        alert(response.message || "Draft saved successfully!");
+        toast.update(toastId, { render: 'Draft saved successfully', type: 'success', isLoading: false, autoClose: 2000 });
         router.push('/my-applications');
       } else {
-        alert(response?.message || "Failed to save draft");
+        toast.update(toastId, { render: response?.message || 'Failed to save draft', type: 'error', isLoading: false, autoClose: 4000 });
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to save draft:', err);
-      alert("Unexpected error while saving draft");
+      toast.update(toastId, { render: err.message || 'Failed to save draft', type: 'error', isLoading: false, autoClose: 4000 });
     } finally {
       setIsSaving(false);
     }
   };
 
 const handleSubmit = async () => {
+  const payload = buildPayload("Under Review");
+  const toastId = toast.loading('Submitting application...');
   setIsSubmitting(true);
   try {
-    const payload = buildPayload("Under Review");
     const response = await updateApplication(parseInt(id), payload);
-
     if (response?.success) {
-      alert(response.message || "Application submitted successfully!");
+      toast.update(toastId, { render: 'Application submitted successfully', type: 'success', isLoading: false, autoClose: 3000 });
       router.push('/my-applications');
     } else {
-      alert(response?.message || "Failed to submit application");
+      toast.update(toastId, { render: response?.message || 'Failed to submit application', type: 'error', isLoading: false, autoClose: 5000 });
     }
   } catch (err: any) {
     console.error('Failed to submit application:', err);
     const errorMessage = err.response?.data?.message || err.message || 'Failed to submit application';
-    alert(`Unexpected error while submitting application: ${errorMessage}`);
+    toast.update(toastId, { render: errorMessage, type: 'error', isLoading: false, autoClose: 5000 });
   } finally {
     setIsSubmitting(false);
   }
@@ -274,18 +275,28 @@ const handleSubmit = async () => {
               ) : (
                 <div>
                   <Button
-                    onClick={() => setDraftShowConfirmDialog(true)}
+                    onClick={handleDraft}
                     className="ml-auto mr-8 bg-blue-600 hover:bg-blue-700 text-white"
                     disabled={isSaving}
                   >
-                    {isSaving ? 'Saving...' : 'Save Draft'}
+                    {isSaving ? (
+                      <span className="inline-flex items-center gap-2">
+                        <span className="h-4 w-4 border-2 border-white/60 border-t-transparent rounded-full animate-spin" />
+                        Saving...
+                      </span>
+                    ) : 'Save Draft'}
                   </Button>
                   <Button
-                    onClick={() => setSubmitShowConfirmDialog(true)}
+                    onClick={handleSubmit}
                     className="ml-auto bg-green-600 hover:bg-green-700 text-white"
                     disabled={isSubmitting}
                   >
-                    {isSubmitting ? 'Submitting...' : 'Submit Changes'}
+                    {isSubmitting ? (
+                      <span className="inline-flex items-center gap-2">
+                        <span className="h-4 w-4 border-2 border-white/60 border-t-transparent rounded-full animate-spin" />
+                        Submitting...
+                      </span>
+                    ) : 'Submit Changes'}
                   </Button>
                 </div>
               )}
@@ -293,25 +304,6 @@ const handleSubmit = async () => {
           </>
         )}
 
-        <ConfirmationDialog
-          isOpen={showDraftConfirmDialog}
-          title="Confirm Changes"
-          message="Are you sure you want to update this application?"
-          confirmText="Update Draft Application"
-          onConfirm={handleDraft}
-          onCancel={() => setDraftShowConfirmDialog(false)}
-          isSubmitting={isSaving}
-        />
-
-        <ConfirmationDialog
-          isOpen={showSubmitConfirmDialog}
-          title="Confirm Changes"
-          message="Are you sure you want to submit this application?"
-          confirmText="Submit Application"
-          onConfirm={handleSubmit}
-          onCancel={() => setSubmitShowConfirmDialog(false)}
-          isSubmitting={isSubmitting}
-        />
 
         {error && (
           <div className="mt-4 p-4 bg-red-100 text-red-700 rounded-lg">

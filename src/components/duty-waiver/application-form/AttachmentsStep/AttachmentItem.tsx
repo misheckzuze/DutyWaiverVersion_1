@@ -11,7 +11,7 @@ import 'react-toastify/dist/ReactToastify.css';
 
 interface AttachmentItemProps {
   attachment: Attachment;
-  onFileChange: (id: string, file: File | null, attachmentId?: number, relativePath?: string) => void;
+  onFileChange: (id: string, file: File | null, attachmentId?: number, relativePath?: string, contentType?: string, size?: number) => void;
   onRemove: (id: string) => void;
 }
 
@@ -33,8 +33,17 @@ export const AttachmentItem: React.FC<AttachmentItemProps> = ({
       const res = await uploadDocument(file);
       toast.update(toastId, { render: 'Document uploaded', type: 'success', isLoading: false, autoClose: 2000 });
 
-      // Pass the attachmentId and relativePath to parent
-      onFileChange(attachment.id, file, res.data.attachmentId, res.data.relativePath);
+      // Pass the attachmentId, relativePath, contentType, and size to parent
+      onFileChange(
+        attachment.id,
+        file,
+        (res.data.attachmentId ?? res.data.attachmentRecordId) as number,
+        res.data.relativePath,
+        res.data.contentType,
+        res.data.size
+      );
+      // Also reflect contentType and size on attachment (update via parent in-place)
+      // We cannot pass extra fields via signature, so we rely on parent storing them via a second path if needed.
     } catch (err: any) {
       toast.update(toastId, { render: err?.message || 'Upload failed', type: 'error', isLoading: false, autoClose: 4000 });
     }
