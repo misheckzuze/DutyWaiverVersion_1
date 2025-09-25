@@ -8,4 +8,8 @@ export interface Item {
   value: number;
   dutyAmount?: number;
   currency?: string;
+  uom?: {
+    code: string;
+    description: string;
+  };
 }
