@@ -58,6 +58,16 @@ import XCircleIcon from './x-circle.svg';
 import PencilSquareIcon from './pencil-square.svg';
 import DocumentIcon from './document.svg';
 
+// Professional AEO and Business Icons
+import BuildingIcon from './building.svg';
+import ShieldCheckIcon from './shield-check.svg';
+import FileTextIcon from './file-text.svg';
+import TrendingUpIcon from './trending-up.svg';
+import CheckCircle2Icon from './check-circle-2.svg';
+import Clock2Icon from './clock-2.svg';
+import UsersIcon from './users.svg';
+import BriefcaseIcon from './briefcase.svg';
+
 export {
   DownloadIcon,
   BellIcon,
@@ -117,4 +127,12 @@ export {
   XCircleIcon,
   PencilSquareIcon,
   DocumentIcon,
+  BuildingIcon,
+  ShieldCheckIcon,
+  FileTextIcon,
+  TrendingUpIcon,
+  CheckCircle2Icon,
+  Clock2Icon,
+  UsersIcon,
+  BriefcaseIcon,
 };

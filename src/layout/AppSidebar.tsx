@@ -16,6 +16,14 @@ import {
   PlugInIcon,
   TableIcon,
   UserCircleIcon,
+  BuildingIcon,
+  ShieldCheckIcon,
+  FileTextIcon,
+  TrendingUpIcon,
+  CheckCircle2Icon,
+  Clock2Icon,
+  UsersIcon,
+  BriefcaseIcon,
 } from "../icons/index";
 import SidebarWidget from "./SidebarWidget";
 
@@ -23,12 +31,13 @@ type NavItem = {
   name: string;
   icon: React.ReactNode;
   path?: string;
+  badge?: string;
   subItems?: { name: string; path: string; pro?: boolean; new?: boolean }[];
 };
 
 const navItems: NavItem[] = [
   {
-    icon: <BoxCubeIcon />,
+    icon: <BriefcaseIcon />,
     name: "Duty Waiver",
     subItems: [
       { name: "Dashboard", path: "/" },
@@ -38,8 +47,9 @@ const navItems: NavItem[] = [
     ],
   },
       {
-        icon: <PageIcon />,
+        icon: <ShieldCheckIcon />,
         name: "AEO",
+        // badge: "Advanced",
         subItems: [
           { name: "Dashboard", path: "/aeo" },
           { name: "Company Profile", path: "/aeo/aeo-profile" },
@@ -93,6 +103,11 @@ const AppSidebar: React.FC = () => {
               </span>
               {(isExpanded || isHovered || isMobileOpen) && (
                 <span className={`menu-item-text`}>{nav.name}</span>
+              )}
+              {nav.badge && (isExpanded || isHovered || isMobileOpen) && (
+                <span className="ml-auto px-2 py-1 text-xs font-semibold text-brand-600 bg-brand-100 dark:bg-brand-900/30 dark:text-brand-400 rounded-full">
+                  {nav.badge}
+                </span>
               )}
               {(isExpanded || isHovered || isMobileOpen) && (
                 <ChevronDownIcon
@@ -306,14 +321,14 @@ const AppSidebar: React.FC = () => {
           <div className="flex flex-col gap-4">
             <div>
               <h2
-                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${
+                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-500 dark:text-gray-400 font-semibold tracking-wider ${
                   !isExpanded && !isHovered
                     ? "lg:justify-center"
                     : "justify-start"
                 }`}
               >
                 {isExpanded || isHovered || isMobileOpen ? (
-                  "Menu"
+                  "Main Services"
                 ) : (
                   <HorizontaLDots />
                 )}
@@ -323,14 +338,14 @@ const AppSidebar: React.FC = () => {
 
             <div className="">
               <h2
-                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${
+                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-500 dark:text-gray-400 font-semibold tracking-wider ${
                   !isExpanded && !isHovered
                     ? "lg:justify-center"
                     : "justify-start"
                 }`}
               >
                 {isExpanded || isHovered || isMobileOpen ? (
-                  "User Management"
+                  "Account"
                 ) : (
                   <HorizontaLDots />
                 )}

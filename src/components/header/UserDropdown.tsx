@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
 import Link from "next/link";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,8 +11,15 @@ export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);
   const { logout } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [userDetails, setUserDetails] = useState<any>(null);
+  const [isClient, setIsClient] = useState(false);
 
-  const userDetails = AuthenticatedUser.getUserDetails();
+  useEffect(() => {
+    setIsClient(true);
+    const details = AuthenticatedUser.getUserDetails();
+    setUserDetails(details);
+  }, []);
+
   const firstName = userDetails?.firstName || "";
   const lastName = userDetails?.lastName || "";
   const email = userDetails?.email || "";
@@ -76,7 +83,9 @@ export default function UserDropdown() {
           />
         </span>
 
-        <span className="block mr-1 font-medium text-theme-sm">{firstName}</span>
+        <span className="block mr-1 font-medium text-theme-sm">
+          {isClient ? firstName : "Loading..."}
+        </span>
 
         <svg
           className={`stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200 ${
@@ -105,10 +114,10 @@ export default function UserDropdown() {
       >
         <div>
           <span className="block font-medium text-gray-700 text-theme-sm dark:text-gray-400">
-            {firstName} {lastName}
+            {isClient ? `${firstName} ${lastName}`.trim() : "Loading..."}
           </span>
           <span className="mt-0.5 block text-theme-xs text-gray-500 dark:text-gray-400">
-            {email}
+            {isClient ? email : "Loading..."}
           </span>
         </div>
 
