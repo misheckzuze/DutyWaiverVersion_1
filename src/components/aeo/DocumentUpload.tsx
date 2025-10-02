@@ -47,8 +47,13 @@ export default function DocumentUpload({
 
     try {
       const response = await uploadDocument(file);
-      setUploadedRecordId(response.data.attachmentRecordId);
-      onUploadComplete(response.data.attachmentRecordId);
+      const recordId = response.data.attachmentRecordId ?? null;
+      setUploadedRecordId(recordId);
+      if (recordId !== null) {
+        onUploadComplete(recordId);
+      } else {
+        onUploadError('Upload succeeded but no record ID was returned');
+      }
     } catch (error: any) {
       onUploadError(error.message || 'Upload failed');
       setUploadedFile(null);
