@@ -10,15 +10,12 @@ export const metadata: Metadata = {
   keywords: "AEO, Application Details, Dashboard",
 };
 
-// Page props
-interface AEOApplicationPageProps {
-  params: { id: string };
-}
-
-// Async page component with PageProps type
+// Async page component
 export default async function AEOApplicationPage({
   params,
-}: AEOApplicationPageProps) {
+}: {
+  params: { id: string }; // Inline typing is fine for App Router
+}) {
   const applicationId = parseInt(params.id, 10);
 
   return (
