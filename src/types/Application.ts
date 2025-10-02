@@ -9,8 +9,8 @@ export interface ApplicationItem {
 }
 
 export interface ApplicationAttachment {
-    type: string;
-    file: string;
+    attachmentTypeId: number;
+    attachmentId: number;
 }
 
 export interface ApplicationProps {
