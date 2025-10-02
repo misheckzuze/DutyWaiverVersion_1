@@ -164,15 +164,15 @@ export default function AEOForm() {
                 if (profile.company) setCompanyInfo(profile.company);
                 if (profile.declarations && profile.declarations.length) setValue('declarations', profile.declarations.map(stripServerFields));
                 if (profile.customsAgents) {
-                    const agents = profile.customsAgents.length ? profile.customsAgents.map(stripServerFields) : [{ ...emptyAgent }];
-                    setCustomsAgents(agents);
-                    // Mark existing agents as already validated
-                    const validatedState: {[key: number]: boolean} = {};
-                    agents.forEach((_, index) => {
-                        validatedState[index] = true; // Existing agents are considered validated
-                    });
-                    setValidatedAgents(validatedState);
-                }
+                  const agents = profile.customsAgents.length ? profile.customsAgents.map(stripServerFields) : [{ ...emptyAgent }];
+                  setCustomsAgents(agents);
+                  // Mark existing agents as already validated
+                  const validatedState: {[key: number]: boolean} = {};
+                  for (let index = 0; index < agents.length; index++) {
+                  validatedState[index] = true; // Existing agents are considered validated
+                  }
+                  setValidatedAgents(validatedState);
+                  }
                 if (profile.companyContacts) setCompanyContacts(profile.companyContacts.length ? profile.companyContacts.map(stripServerFields) : [{ ...emptyContact }]);
                 if (profile.companyActivity) setCompanyActivity(pickFlags(profile.companyActivity, companyActivityTemplate));
                 if (profile.licenseDetails) setLicenseDetails(profile.licenseDetails.length ? profile.licenseDetails.map(stripServerFields) : [{ ...emptyLicense }]);
