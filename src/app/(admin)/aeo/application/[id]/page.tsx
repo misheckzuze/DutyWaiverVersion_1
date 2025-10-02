@@ -10,14 +10,20 @@ export const metadata: Metadata = {
   keywords: "AEO, Application Details, Dashboard",
 };
 
-// Accept id as string or string[] and normalize it
+// In Next.js 15, params is a Promise
 interface Params {
-  id: string | string[];
+  id: string;
 }
 
-export default async function AEOApplicationPage({ params }: { params: Params }) {
-  // Convert id to string if it's an array
-  const id = Array.isArray(params.id) ? params.id[0] : params.id;
+export default async function AEOApplicationPage({ 
+  params 
+}: { 
+  params: Promise<Params> 
+}) {
+  // Await the params promise
+  const { id } = await params;
+  
+  // Convert id to number
   const applicationId = parseInt(id, 10);
 
   return (
