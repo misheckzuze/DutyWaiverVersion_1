@@ -9,13 +9,11 @@ export const metadata: Metadata = {
   keywords: "AEO, Application Details, Dashboard",
 };
 
-interface AEOApplicationPageProps {
-  params: {
-    id: string;
-  };
-}
-
-export default function AEOApplicationPage({ params }: AEOApplicationPageProps) {
+export default function AEOApplicationPage({
+  params,
+}: {
+  params: { id: string };
+}) {
   const applicationId = parseInt(params.id);
 
   return (
