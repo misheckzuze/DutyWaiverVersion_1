@@ -10,13 +10,15 @@ export const metadata: Metadata = {
   keywords: "AEO, Application Details, Dashboard",
 };
 
-// Async page component
-export default async function AEOApplicationPage({
-  params,
-}: {
-  params: { id: string | string[] };
-}) {
-  const applicationId = parseInt(Array.isArray(params.id) ? params.id[0] : params.id, 10);
+// Accept id as string or string[] and normalize it
+interface Params {
+  id: string | string[];
+}
+
+export default async function AEOApplicationPage({ params }: { params: Params }) {
+  // Convert id to string if it's an array
+  const id = Array.isArray(params.id) ? params.id[0] : params.id;
+  const applicationId = parseInt(id, 10);
 
   return (
     <div>
