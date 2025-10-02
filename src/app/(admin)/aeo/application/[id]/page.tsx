@@ -3,25 +3,23 @@ import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import { Metadata } from "next";
 import AEOApplicationDetails from "@/components/aeo/AEOApplicationDetails";
 
-// Metadata for the page
+// Metadata
 export const metadata: Metadata = {
   title: "AEO Application Details | Duty Waiver System",
   description: "View detailed information about your AEO application.",
   keywords: "AEO, Application Details, Dashboard",
 };
 
-// Props type for the page
+// Page props
 interface AEOApplicationPageProps {
-  params: {
-    id: string;
-  };
+  params: { id: string };
 }
 
-// Make the component async to satisfy Next.js App Router types
+// Async page component with PageProps type
 export default async function AEOApplicationPage({
   params,
 }: AEOApplicationPageProps) {
-  const applicationId = parseInt(params.id);
+  const applicationId = parseInt(params.id, 10);
 
   return (
     <div>
