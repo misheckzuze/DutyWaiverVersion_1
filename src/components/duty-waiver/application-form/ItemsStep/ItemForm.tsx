@@ -185,27 +185,31 @@ export const ItemForm: React.FC<ItemFormProps> = ({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
-        {/* HS Code */}
-        <div className="md:col-span-2">
-          <Label>HS Code*</Label>
-          <div>
-            <Input
-              type="text"
-              value={editingItemId
-                ? items.find(i => i.id === editingItemId)?.hsCode || ''
-                : newItem.hsCode}
-              onChange={(e) => handleHSCodeChange(e, !!editingItemId)}
-              placeholder="HS Code"
-              className="w-full"
-              maxLength={8}
-            />
-          </div>
-          {(hsCodeValidationError || validationError) && (
-            <p className="text-red-500 text-xs mt-1">
-              {hsCodeValidationError || validationError}
-            </p>
-          )}
-        </div>
+  {/* HS Code */}
+  <div className="md:col-span-2">
+    <Label>HS Code*</Label>
+    <div>
+      <Input
+        type="text"
+        value={editingItemId
+          ? items.find(i => i.id === editingItemId)?.hsCode || ''
+          : newItem.hsCode}
+        onChange={(e) => {
+          // Limit to 8 characters
+          if (e.target.value.length <= 8) {
+            handleHSCodeChange(e, !!editingItemId);
+          }
+        }}
+        placeholder="HS Code"
+        className="w-full"
+      />
+    </div>
+    {(hsCodeValidationError || validationError) && (
+      <p className="text-red-500 text-xs mt-1">
+        {hsCodeValidationError || validationError}
+      </p>
+    )}
+  </div>
 
         {/* Description */}
         <div className="md:col-span-4">
