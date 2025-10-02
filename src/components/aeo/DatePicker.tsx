@@ -19,9 +19,16 @@ export default function DatePicker({ value, onChange, className, ...props }: Dat
             input.style.minHeight = '40px';
             
             // Force show the date picker on click
-            input.addEventListener('click', () => {
+            const handleClick = () => {
                 input.showPicker?.();
-            });
+            };
+            
+            input.addEventListener('click', handleClick);
+            
+            // Cleanup
+            return () => {
+                input.removeEventListener('click', handleClick);
+            };
         }
     }, []);
 
@@ -36,8 +43,8 @@ export default function DatePicker({ value, onChange, className, ...props }: Dat
                 onChange={onChange}
                 className={className || defaultClassName}
                 style={{
-                    cursor: 'pointer !important',
-                    pointerEvents: 'auto !important',
+                    cursor: 'pointer',
+                    pointerEvents: 'auto',
                     position: 'relative',
                     zIndex: 10,
                     minHeight: '40px',
@@ -47,22 +54,22 @@ export default function DatePicker({ value, onChange, className, ...props }: Dat
                     width: '100%'
                 }}
                 onFocus={(e) => {
-                    e.target.style.pointerEvents = 'auto';
-                    e.target.style.cursor = 'pointer';
+                    e.currentTarget.style.pointerEvents = 'auto';
+                    e.currentTarget.style.cursor = 'pointer';
                     // Try to show the picker on focus
-                    if (e.target.showPicker) {
-                        e.target.showPicker();
+                    if (e.currentTarget.showPicker) {
+                        e.currentTarget.showPicker();
                     }
                 }}
                 onClick={(e) => {
                     // Ensure click events work
                     e.stopPropagation();
-                    if (e.target.showPicker) {
-                        e.target.showPicker();
+                    if (e.currentTarget.showPicker) {
+                        e.currentTarget.showPicker();
                     }
                 }}
                 onMouseEnter={(e) => {
-                    e.target.style.cursor = 'pointer';
+                    e.currentTarget.style.cursor = 'pointer';
                 }}
                 {...props}
             />
