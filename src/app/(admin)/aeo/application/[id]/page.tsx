@@ -14,9 +14,9 @@ export const metadata: Metadata = {
 export default async function AEOApplicationPage({
   params,
 }: {
-  params: { id: string }; // Inline typing is fine for App Router
+  params: { id: string | string[] };
 }) {
-  const applicationId = parseInt(params.id, 10);
+  const applicationId = parseInt(Array.isArray(params.id) ? params.id[0] : params.id, 10);
 
   return (
     <div>
